@@ -463,12 +463,37 @@ The file having coverage elsewhere is irrelevant — it's a false sense of secur
   <strong>66% of bugs are on uncovered code paths.</strong></p>
 </div>
 
+<h3>Accounting for indirect coverage</h3>
+
+<p>Snapshot tests don't just test rendering — they implicitly test the full stack behind what's
+rendered. A test that renders a conversation after switching implies it exercises conversation
+persistence. We re-examined all 20 "file covered, path uncovered" bugs by reading every
+snapshot test file in the repo and asking: <em>would the snapshot output actually change if this
+bug existed?</em></p>
+
+<p>The strict criteria for "indirectly covered" (B1):</p>
+<ol>
+  <li>A snapshot test exercises a flow that runs through this code path</li>
+  <li>The specific bug would produce <strong>visibly different</strong> snapshot output</li>
+  <li>The test's input data (trajectory/mock data) would trigger the bug</li>
+</ol>
+
+<div class="card">
+  <img src="data:image/png;base64,{img_deep18_reclassified}" alt="Reclassified path-level coverage">
+  <p class="caption">After accounting for indirect coverage, 46% of TUI bugs hit covered paths
+  (up from 34%). 4 bugs are indirectly covered (confirmation scrolling, conversation switching,
+  command truncation, autoscrolling). But 16 bugs (46%) are in files with adjacent coverage where
+  no snapshot exercises the specific broken behavior — settings persistence, notifications,
+  event types not in trajectories, race conditions.</p>
+</div>
+
 <div class="evidence neutral">
-  <strong>The "false sense of security" pattern:</strong> 20 of 35 post-adoption TUI bugs are in
-  files like <code>settings_screen.py</code> and <code>richlog_visualizer.py</code> that have snapshot
-  coverage for <em>some</em> of their behavior — but the bug was on a different code path that
-  no snapshot exercises. The file having coverage makes it look protected, but the specific
-  behavior that broke had no baseline.
+  <strong>The biggest gap: settings persistence.</strong> 7 of 16 adjacent-but-uncovered bugs are in
+  <code>settings_screen.py</code> and related modules. The repo has snapshot tests for the
+  <em>first-time setup flow</em> (no saved config) and the <em>critic settings tab</em>, but no
+  test saves settings, closes the modal, and reopens to verify the saved values rendered correctly.
+  A single "save → reload → snapshot" test would indirectly cover model name persistence,
+  condensation defaults, dropdown ordering, and clear behavior — closing 7 bugs' worth of blind spots.
 </div>
 
 <h3>The UX regression rate, honestly normalized</h3>
@@ -610,6 +635,7 @@ def main():
         img_deep15_covered=embed(g / "deep_15_covered_vs_uncovered.png"),
         img_deep16_domain=embed(g / "deep_16_bugfix_domain.png"),
         img_deep17_severity=embed(g / "deep_17_severity_by_domain.png"),
+        img_deep18_reclassified=embed(g / "deep_18_reclassified_coverage.png"),
     )
 
     Path(args.output).write_text(html)
