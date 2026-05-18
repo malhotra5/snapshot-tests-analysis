@@ -41,7 +41,7 @@ uv run scripts/mine_github.py --token $GITHUB_TOKEN --repo OpenHands/OpenHands-C
 
 ## 2. `categorize_prs.py` — Classification + CSV Export
 
-Takes the mined JSON, applies heuristic keyword labels and optionally LLM classification (via [litellm](https://docs.litellm.ai/)), exports a flat CSV. Supports 100+ LLM providers out of the box.
+Takes the mined JSON, applies heuristic keyword labels and optionally LLM classification (via the [OpenHands SDK](https://docs.openhands.dev/sdk) `LLM` object), exports a flat CSV. Supports 100+ LLM providers out of the box with built-in retry logic.
 
 ```bash
 # Heuristic only (no LLM, instant):
@@ -55,6 +55,9 @@ uv run scripts/categorize_prs.py --input mined_prs.json --model anthropic/claude
 
 # Ollama (local, no API key needed):
 uv run scripts/categorize_prs.py --input mined_prs.json --model ollama/llama3
+
+# Custom endpoint:
+uv run scripts/categorize_prs.py --input mined_prs.json --model my-model --base-url https://my-llm/v1
 
 # Explicit API key (overrides env vars):
 uv run scripts/categorize_prs.py --input mined_prs.json --model gpt-4o-mini --api-key $OPENAI_API_KEY

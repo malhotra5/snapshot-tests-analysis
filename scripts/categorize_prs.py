@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 # /// script
-# requires-python = ">=3.11"
-# dependencies = ["litellm>=1.40"]
+# requires-python = ">=3.12"
+# dependencies = ["openhands-sdk>=1.0"]
 # ///
 """
-Categorize mined PR data using an LLM (via litellm) and export to CSV.
+Categorize mined PR data using an LLM (via openhands-sdk) and export to CSV.
+
+Uses the OpenHands SDK's LLM object, which wraps litellm and supports 100+
+providers with built-in retry logic and telemetry.
 
 Usage (via uv):
     # Categorize with LLM (any litellm-supported model):
@@ -15,6 +18,9 @@ Usage (via uv):
 
     # Ollama (local):
     uv run scripts/categorize_prs.py --input mined_prs.json --model ollama/llama3
+
+    # Custom endpoint:
+    uv run scripts/categorize_prs.py --input mined_prs.json --model my-model --base-url https://my-llm/v1
 
     # Explicit API key (otherwise uses env vars like OPENAI_API_KEY, ANTHROPIC_API_KEY):
     uv run scripts/categorize_prs.py --input mined_prs.json --model gpt-4o-mini --api-key $OPENAI_API_KEY
@@ -180,25 +186,28 @@ Linked issues:{issues_text or ' none'}
 """
 
 
-def call_llm(prompt, model, api_key=None):
-    """Call any litellm-supported model for classification."""
-    import litellm
+def make_llm(model, api_key=None, base_url=None):
+    """Create an OpenHands SDK LLM instance."""
+    from openhands.sdk import LLM
 
-    kwargs = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt},
-        ],
-        "temperature": 0.1,
-        "max_tokens": 300,
-    }
+    kwargs = {"model": model}
     if api_key:
         kwargs["api_key"] = api_key
+    if base_url:
+        kwargs["base_url"] = base_url
+    return LLM(**kwargs)
+
+
+def call_llm(llm, prompt):
+    """Call the LLM for classification and return parsed JSON."""
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": prompt},
+    ]
 
     try:
-        resp = litellm.completion(**kwargs)
-        content = resp.choices[0].message.content.strip()
+        resp = llm.completion(messages=messages)
+        content = resp.message.content.strip()
         # Parse JSON from response (handle markdown code blocks)
         if content.startswith("```"):
             content = "\n".join(content.split("\n")[1:-1])
@@ -208,10 +217,10 @@ def call_llm(prompt, model, api_key=None):
         return None
 
 
-def llm_classify(rec, model, api_key=None):
+def llm_classify(llm, rec):
     """Classify a PR using the LLM. Returns dict of labels."""
     prompt = build_llm_prompt(rec)
-    result = call_llm(prompt, model, api_key)
+    result = call_llm(llm, prompt)
     if not result:
         return {
             "llm_pr_type": "",
@@ -288,6 +297,8 @@ def main():
     p.add_argument("--model", default="gpt-4o-mini",
                    help="Any litellm model string, e.g. gpt-4o-mini, "
                         "anthropic/claude-sonnet-4-20250514, ollama/llama3")
+    p.add_argument("--base-url", default=None,
+                   help="Custom LLM API base URL (e.g. Azure, local proxy)")
     args = p.parse_args()
 
     # Load
@@ -295,6 +306,13 @@ def main():
         data = json.load(f)
     prs = data.get("pull_requests", [])
     print(f"Loaded {len(prs)} PRs from {args.input}")
+
+    # Create LLM instance once (reused for all PRs)
+    llm = None
+    if not args.heuristic_only:
+        llm = make_llm(args.model, api_key=args.api_key, base_url=args.base_url)
+        print(f"Using model: {args.model}" +
+              (f" via {args.base_url}" if args.base_url else ""))
 
     # Classify
     for i, rec in enumerate(prs):
@@ -306,9 +324,9 @@ def main():
         rec.update(h_labels)
 
         # LLM labels (if requested)
-        if not args.heuristic_only:
+        if llm is not None:
             print(f"  [{i+1}/{len(prs)}] LLM classifying #{num}: {title}")
-            llm_labels = llm_classify(rec, args.model, args.api_key)
+            llm_labels = llm_classify(llm, rec)
             rec.update(llm_labels)
             if (i + 1) % 20 == 0:
                 time.sleep(1)  # rate limit
