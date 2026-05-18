@@ -39,6 +39,11 @@ import time
 from pathlib import Path
 
 
+def log(msg):
+    """Print with immediate flush so progress is visible even when redirected."""
+    print(msg, flush=True)
+
+
 # ---------------------------------------------------------------------------
 # Heuristic (keyword-based) classification — always available, no LLM needed
 # ---------------------------------------------------------------------------
@@ -200,14 +205,19 @@ def make_llm(model, api_key=None, base_url=None):
 
 def call_llm(llm, prompt):
     """Call the LLM for classification and return parsed JSON."""
+    from openhands.sdk.llm.message import Message, TextContent
+
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": prompt},
+        Message(role="system", content=[TextContent(text=SYSTEM_PROMPT)]),
+        Message(role="user", content=[TextContent(text=prompt)]),
     ]
 
     try:
         resp = llm.completion(messages=messages)
-        content = resp.message.content.strip()
+        # resp.message.content is a list of TextContent/ImageContent objects
+        content = "".join(
+            part.text for part in resp.message.content if hasattr(part, "text")
+        ).strip()
         # Parse JSON from response (handle markdown code blocks)
         if content.startswith("```"):
             content = "\n".join(content.split("\n")[1:-1])
@@ -284,6 +294,36 @@ def flatten_for_csv(rec):
 
 
 # ---------------------------------------------------------------------------
+# Incremental CSV helpers
+# ---------------------------------------------------------------------------
+
+def _deduplicated_columns():
+    """Return CSV_COLUMNS with duplicates removed (preserving order)."""
+    seen = set()
+    cols = []
+    for c in CSV_COLUMNS:
+        if c not in seen:
+            cols.append(c)
+            seen.add(c)
+    return cols
+
+
+def load_already_done(output_path):
+    """Load PR numbers already present in an existing output CSV (for resume)."""
+    done = set()
+    p = Path(output_path)
+    if p.exists() and p.stat().st_size > 0:
+        with open(p, newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                try:
+                    done.add(int(row["pr_number"]))
+                except (KeyError, ValueError):
+                    pass
+    return done
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -301,68 +341,85 @@ def main():
                    help="Custom LLM API base URL (e.g. Azure, local proxy)")
     args = p.parse_args()
 
-    # Load
+    # Load input data
     with open(args.input) as f:
         data = json.load(f)
     prs = data.get("pull_requests", [])
-    print(f"Loaded {len(prs)} PRs from {args.input}")
+    log(f"Loaded {len(prs)} PRs from {args.input}")
+
+    # Resume support: skip PRs already written to the output CSV
+    already_done = load_already_done(args.output)
+    if already_done:
+        log(f"Resuming — {len(already_done)} PRs already in {args.output}, "
+            f"{len(prs) - len(already_done)} remaining")
 
     # Create LLM instance once (reused for all PRs)
     llm = None
     if not args.heuristic_only:
         llm = make_llm(args.model, api_key=args.api_key, base_url=args.base_url)
-        print(f"Using model: {args.model}" +
-              (f" via {args.base_url}" if args.base_url else ""))
+        log(f"Using model: {args.model}" +
+            (f" via {args.base_url}" if args.base_url else ""))
 
-    # Classify
-    for i, rec in enumerate(prs):
-        num = rec["pr_number"]
-        title = rec.get("pr_title", "")[:50]
-
-        # Heuristic labels (always)
-        h_labels = heuristic_classify(rec)
-        rec.update(h_labels)
-
-        # LLM labels (if requested)
-        if llm is not None:
-            print(f"  [{i+1}/{len(prs)}] LLM classifying #{num}: {title}")
-            llm_labels = llm_classify(llm, rec)
-            rec.update(llm_labels)
-            if (i + 1) % 20 == 0:
-                time.sleep(1)  # rate limit
-        else:
-            rec["llm_pr_type"] = ""
-            rec["llm_bug_severity"] = ""
-            rec["llm_touches_tui"] = ""
-            rec["llm_rationale"] = ""
-
-    # Export CSV
-    # Deduplicate CSV_COLUMNS (pr_author appears twice above)
-    seen = set()
-    unique_cols = []
-    for c in CSV_COLUMNS:
-        if c not in seen:
-            unique_cols.append(c)
-            seen.add(c)
-
-    with open(args.output, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=unique_cols, extrasaction="ignore")
+    # Prepare CSV — append if resuming, otherwise write fresh header
+    unique_cols = _deduplicated_columns()
+    is_resuming = bool(already_done)
+    csv_file = open(args.output, "a" if is_resuming else "w", newline="")
+    writer = csv.DictWriter(csv_file, fieldnames=unique_cols, extrasaction="ignore")
+    if not is_resuming:
         writer.writeheader()
-        for rec in prs:
+        csv_file.flush()
+
+    # Classify and write incrementally
+    written = 0
+    all_recs = []  # keep for summary stats
+    try:
+        for i, rec in enumerate(prs):
+            num = rec["pr_number"]
+
+            # Skip if already done (resume)
+            if num in already_done:
+                continue
+
+            title = rec.get("pr_title", "")[:50]
+
+            # Heuristic labels (always)
+            h_labels = heuristic_classify(rec)
+            rec.update(h_labels)
+
+            # LLM labels (if requested)
+            if llm is not None:
+                log(f"  [{i+1}/{len(prs)}] LLM classifying #{num}: {title}")
+                llm_labels = llm_classify(llm, rec)
+                rec.update(llm_labels)
+                if (i + 1) % 20 == 0:
+                    time.sleep(1)  # rate limit
+            else:
+                rec["llm_pr_type"] = ""
+                rec["llm_bug_severity"] = ""
+                rec["llm_touches_tui"] = ""
+                rec["llm_rationale"] = ""
+
+            # Write row immediately
             writer.writerow(flatten_for_csv(rec))
+            csv_file.flush()
+            written += 1
+            all_recs.append(rec)
+    finally:
+        csv_file.close()
 
-    print(f"\nWrote {len(prs)} rows → {args.output}")
+    total = len(already_done) + written
+    log(f"\nWrote {written} new rows ({total} total) → {args.output}")
 
-    # Summary
+    # Summary (over newly written rows)
     from collections import Counter
-    types = Counter(rec.get("h_pr_type") for rec in prs)
-    sevs = Counter(rec.get("h_bug_severity") for rec in prs if rec.get("h_bug_severity"))
-    print(f"\nHeuristic PR types: {dict(types)}")
-    print(f"Bug severities: {dict(sevs)}")
+    types = Counter(rec.get("h_pr_type") for rec in all_recs)
+    sevs = Counter(rec.get("h_bug_severity") for rec in all_recs if rec.get("h_bug_severity"))
+    log(f"\nHeuristic PR types: {dict(types)}")
+    log(f"Bug severities: {dict(sevs)}")
 
     if not args.heuristic_only:
-        llm_types = Counter(rec.get("llm_pr_type") for rec in prs if rec.get("llm_pr_type"))
-        print(f"LLM PR types: {dict(llm_types)}")
+        llm_types = Counter(rec.get("llm_pr_type") for rec in all_recs if rec.get("llm_pr_type"))
+        log(f"LLM PR types: {dict(llm_types)}")
 
 
 if __name__ == "__main__":
