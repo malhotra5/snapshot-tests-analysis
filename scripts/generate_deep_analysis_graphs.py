@@ -560,8 +560,513 @@ def fig_sdlc_summary(rows, full, out):
 
 
 # ---------------------------------------------------------------------------
+# Graph 10: Bug rate with codebase growth context
+# ---------------------------------------------------------------------------
+
+def fig_bug_rate_with_context(rows, full, out):
+    """UX bugs normalized by cumulative TUI features — the honest trend."""
+    months = sorted(set(r.get("pr_created_at", "")[:7] for r in rows
+                        if r.get("pr_created_at", "")[:7]))
+
+    ux_per_feat = []
+    cum_tui = 0
+    sample_sizes = []
+
+    for m in months:
+        agent = [r for r in rows if r.get("pr_created_at", "")[:7] == m
+                 and r["authorship"] == "agent"]
+        ux = [r for r in agent if r["llm_pr_type"] == "bug-fix"
+              and r["llm_bug_severity"] == "ux-regression"]
+        feats = [r for r in agent if r["llm_pr_type"] == "feature" and is_tui(r)]
+        cum_tui += len(feats)
+        ux_per_feat.append(len(ux) / max(cum_tui, 1))
+        sample_sizes.append(len(agent))
+
+    fig, ax = plt.subplots(figsize=(10, 5.5))
+    x = range(len(months))
+
+    # Color pre vs post differently
+    adopt_idx = months.index("2026-01") if "2026-01" in months else len(months)
+    pre_x = list(range(adopt_idx))
+    post_x = list(range(adopt_idx, len(months)))
+    pre_y = ux_per_feat[:adopt_idx]
+    post_y = ux_per_feat[adopt_idx:]
+
+    ax.plot(pre_x, pre_y, color="#BDBDBD", marker="o", linewidth=2.5,
+            markersize=8, label="Pre-adoption", zorder=3)
+    ax.plot(post_x, post_y, color="#F2994A", marker="o", linewidth=2.5,
+            markersize=8, label="Post-adoption", zorder=3)
+    ax.fill_between(post_x, post_y, alpha=0.1, color="#F2994A")
+
+    # Add sample size annotations
+    for i, (v, n) in enumerate(zip(ux_per_feat, sample_sizes)):
+        if n < 10:
+            ax.annotate(f"n={n}", xy=(i, v), xytext=(0, 12),
+                        textcoords="offset points", fontsize=8, color="#999",
+                        ha="center")
+
+    if adopt_idx < len(months):
+        ax.axvline(adopt_idx - 0.5, color="#333", linestyle="--", alpha=0.4, linewidth=1.5)
+        ax.text(adopt_idx - 0.4, max(ux_per_feat) * 0.95,
+                "snapshot\nadoption", fontsize=9, color="#333", va="top")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(months, rotation=30, ha="right")
+    ax.set_ylabel("UX-regression bugs / cumulative TUI features", fontsize=10)
+    ax.set_title("UX Regression Rate Normalized by Codebase Size\n"
+                 "Bugs per feature dropped from 0.45 to 0.02–0.10 post-adoption")
+    ax.legend(fontsize=10)
+    ax.set_ylim(-0.02, max(ux_per_feat) * 1.25)
+
+    fig.tight_layout()
+    fig.savefig(out / "deep_10_bug_rate_with_context.png", dpi=150)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Graph 11: UX regressions breakdown — where do they land?
+# ---------------------------------------------------------------------------
+
+def fig_ux_regression_breakdown(rows, full, out):
+    """Stacked bar: UX-regression bug-fixes split by snapshot involvement."""
+    months = sorted(set(r.get("pr_created_at", "")[:7] for r in rows
+                        if r.get("pr_created_at", "")[:7]))
+
+    snap_mod = []     # TUI, existing snapshots updated
+    snap_new = []     # TUI, new snapshots added
+    tui_no_snap = []  # TUI, no snapshot involvement
+    non_tui = []      # not TUI at all
+
+    for m in months:
+        ux = [r for r in rows if r.get("pr_created_at", "")[:7] == m
+              and r["llm_pr_type"] == "bug-fix" and r["llm_bug_severity"] == "ux-regression"]
+
+        sm, sn, tns, nt = 0, 0, 0, 0
+        for r in ux:
+            tui = is_tui(r)
+            has_snap = r["h_has_snapshot_changes"] == "true"
+            if not tui:
+                nt += 1
+            elif not has_snap:
+                tns += 1
+            else:
+                added, modified = snap_breakdown(r["pr_number"], full)
+                if modified:
+                    sm += 1
+                else:
+                    sn += 1
+
+        snap_mod.append(sm)
+        snap_new.append(sn)
+        tui_no_snap.append(tns)
+        non_tui.append(nt)
+
+    fig, ax = plt.subplots(figsize=(10, 5.5))
+    x = range(len(months))
+    w = 0.65
+
+    b1 = ax.bar(x, snap_mod, width=w, color="#27AE60",
+                label="TUI + existing snapshots updated", edgecolor="white")
+    b2 = ax.bar(x, snap_new, width=w, bottom=snap_mod, color="#56CCF2",
+                label="TUI + new snapshots added", edgecolor="white")
+    bottom2 = [a + b for a, b in zip(snap_mod, snap_new)]
+    b3 = ax.bar(x, tui_no_snap, width=w, bottom=bottom2, color="#F2994A",
+                label="TUI bug, no snapshots touched", edgecolor="white")
+    bottom3 = [a + b for a, b in zip(bottom2, tui_no_snap)]
+    b4 = ax.bar(x, non_tui, width=w, bottom=bottom3, color="#BDBDBD",
+                label="Non-TUI bug", edgecolor="white")
+
+    totals = [a + b + c + d for a, b, c, d in zip(snap_mod, snap_new, tui_no_snap, non_tui)]
+    for i, t in enumerate(totals):
+        if t > 0:
+            ax.text(i, t + 0.2, str(t), ha="center", va="bottom", fontsize=9, fontweight="bold")
+
+    adopt_idx = months.index("2026-01") if "2026-01" in months else None
+    if adopt_idx is not None:
+        ax.axvline(adopt_idx - 0.5, color="#333", linestyle="--", alpha=0.4, linewidth=1.5)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(months, rotation=30, ha="right")
+    ax.set_ylabel("UX-regression bug-fix PRs")
+    ax.set_title("UX Regressions by Month — Where Did They Land?\n"
+                 "Most TUI bugs (orange) had no snapshot involvement")
+    ax.legend(fontsize=9, loc="upper left")
+    fig.tight_layout()
+    fig.savefig(out / "deep_11_ux_regression_breakdown.png", dpi=150)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Graph 12: UX-regression snapshot pattern — pie of all UX bugs
+# ---------------------------------------------------------------------------
+
+def fig_ux_snapshot_involvement(rows, full, out):
+    """Donut: of all UX-regression bug-fixes, how many involved snapshots?"""
+    all_ux = [r for r in rows if r["llm_pr_type"] == "bug-fix"
+              and r["llm_bug_severity"] == "ux-regression"]
+
+    tui_snap_mod = 0
+    tui_snap_new = 0
+    tui_no_snap = 0
+    non_tui = 0
+
+    for r in all_ux:
+        tui = is_tui(r)
+        has_snap = r["h_has_snapshot_changes"] == "true"
+        if not tui:
+            non_tui += 1
+        elif not has_snap:
+            tui_no_snap += 1
+        else:
+            added, modified = snap_breakdown(r["pr_number"], full)
+            if modified:
+                tui_snap_mod += 1
+            else:
+                tui_snap_new += 1
+
+    labels = [
+        f"TUI, existing\nsnapshots updated\n({tui_snap_mod})",
+        f"TUI, new\nsnapshots added\n({tui_snap_new})",
+        f"TUI, no snapshot\ninvolvement\n({tui_no_snap})",
+        f"Non-TUI\n({non_tui})",
+    ]
+    sizes = [tui_snap_mod, tui_snap_new, tui_no_snap, non_tui]
+    colors = ["#27AE60", "#56CCF2", "#F2994A", "#BDBDBD"]
+
+    # Remove zero slices
+    filtered = [(l, s, c) for l, s, c in zip(labels, sizes, colors) if s > 0]
+    labels, sizes, colors = zip(*filtered)
+
+    fig, ax = plt.subplots(figsize=(7, 5.5))
+    wedges, texts, autotexts = ax.pie(
+        sizes, labels=labels, colors=colors, autopct="%1.0f%%",
+        startangle=90, pctdistance=0.75, textprops={"fontsize": 10},
+    )
+    for t in autotexts:
+        t.set_fontweight("bold")
+
+    centre = plt.Circle((0, 0), 0.50, fc="white")
+    ax.add_artist(centre)
+    ax.text(0, 0, f"{sum(sizes)}\nUX\nregressions",
+            ha="center", va="center", fontsize=12, fontweight="bold")
+
+    ax.set_title("UX-Regression Bug-Fixes: Snapshot Involvement\n"
+                 "Only 23% touched snapshots at all")
+    fig.tight_layout()
+    fig.savefig(out / "deep_12_ux_snapshot_involvement.png", dpi=150)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Graph 16: Bug-fix domain breakdown — visual vs non-visual
+# ---------------------------------------------------------------------------
+
+def fig_bugfix_domain(rows, full, out):
+    """Horizontal bar: bug-fixes by code domain with snapshot involvement."""
+    bugfixes = [r for r in rows if r["llm_pr_type"] == "bug-fix"]
+
+    def classify(r):
+        pr = full.get(int(r["pr_number"]), {})
+        files = [f["filename"] for f in pr.get("pr_files", [])]
+        tui = is_tui(r)
+        has_widget = any(kw in f for f in files
+                         for kw in ("screen", "panel", "widget", "visualizer", "textual_app"))
+        has_settings = any("setting" in f for f in files)
+        has_api = any(kw in f for f in files
+                      for kw in ("api_client", "auth", "login", "oauth"))
+        has_config = any(kw in f for f in files
+                         for kw in ("config", "condenser", "agent_store"))
+        if not tui:
+            if has_api:
+                return "API / auth"
+            elif has_config:
+                return "Config / state mgmt"
+            else:
+                return "CLI core / other"
+        else:
+            if has_widget:
+                return "TUI widgets & screens"
+            elif has_settings:
+                return "Settings UI logic"
+            else:
+                return "Other TUI"
+
+    from collections import Counter
+    domain_total = Counter()
+    domain_snap = Counter()
+    for r in bugfixes:
+        d = classify(r)
+        domain_total[d] += 1
+        if r["h_has_snapshot_changes"] == "true":
+            domain_snap[d] += 1
+
+    # Order: visual first (descending), then non-visual
+    visual_order = ["TUI widgets & screens", "Settings UI logic", "Other TUI"]
+    non_visual_order = ["CLI core / other", "Config / state mgmt", "API / auth"]
+    order = [d for d in visual_order + non_visual_order if domain_total[d] > 0]
+
+    labels = order
+    totals = [domain_total[d] for d in order]
+    snaps = [domain_snap[d] for d in order]
+    no_snaps = [t - s for t, s in zip(totals, snaps)]
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    y = range(len(labels))
+
+    # Determine visual vs non-visual boundary
+    vis_count = sum(1 for d in order if d in visual_order)
+
+    bars_snap = ax.barh(y, snaps, height=0.55, color=C["snap"],
+                        label="With snapshot involvement", edgecolor="white")
+    bars_no = ax.barh(y, no_snaps, height=0.55, left=snaps, color="#F2994A",
+                      label="No snapshot involvement", edgecolor="white")
+
+    for i, (s, ns, t) in enumerate(zip(snaps, no_snaps, totals)):
+        ax.text(t + 0.5, i, str(t), va="center", fontsize=11, fontweight="bold")
+
+    # Add visual/non-visual grouping
+    if vis_count < len(order):
+        ax.axhline(vis_count - 0.5, color="#333", linestyle="--", alpha=0.3)
+        ax.text(max(totals) * 0.85, vis_count - 0.7, "visual", fontsize=9,
+                color="#666", ha="center", style="italic")
+        ax.text(max(totals) * 0.85, vis_count - 0.3, "non-visual", fontsize=9,
+                color="#666", ha="center", style="italic")
+
+    ax.set_yticks(y)
+    ax.set_yticklabels(labels, fontsize=10)
+    ax.set_xlabel("Number of bug-fix PRs")
+    ax.set_title(f"Bug-Fixes by Code Domain (n={len(bugfixes)})\n"
+                 "35% of bugs are non-visual — snapshots can't help there")
+    ax.invert_yaxis()
+    ax.legend(fontsize=9, loc="lower right")
+    fig.tight_layout()
+    fig.savefig(out / "deep_16_bugfix_domain.png", dpi=150)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Graph 17: Bug severity × visual/non-visual
+# ---------------------------------------------------------------------------
+
+def fig_severity_by_domain(rows, full, out):
+    """Grouped bar: severity split by visual vs non-visual."""
+    bugfixes = [r for r in rows if r["llm_pr_type"] == "bug-fix"]
+
+    sevs = ["critical", "ux-regression", "polish"]
+    sev_labels = ["Critical", "UX regression", "Polish"]
+
+    vis_counts = []
+    nonvis_counts = []
+    for sev in sevs:
+        sev_bugs = [r for r in bugfixes if r["llm_bug_severity"] == sev]
+        vis = sum(1 for r in sev_bugs if is_tui(r))
+        nonvis = len(sev_bugs) - vis
+        vis_counts.append(vis)
+        nonvis_counts.append(nonvis)
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    x = range(len(sevs))
+    w = 0.35
+    ax.bar([i - w/2 for i in x], vis_counts, width=w, color=C["feature"],
+           label="Visual (TUI)", edgecolor="white")
+    ax.bar([i + w/2 for i in x], nonvis_counts, width=w, color="#BDBDBD",
+           label="Non-visual", edgecolor="white")
+
+    for i, (v, nv) in enumerate(zip(vis_counts, nonvis_counts)):
+        ax.text(i - w/2, v + 0.3, str(v), ha="center", fontsize=10, fontweight="bold")
+        ax.text(i + w/2, nv + 0.3, str(nv), ha="center", fontsize=10, fontweight="bold")
+
+    # Add percentage labels
+    for i, (v, nv) in enumerate(zip(vis_counts, nonvis_counts)):
+        total = v + nv
+        if total > 0:
+            ax.text(i + w/2, nv + 1.5,
+                    f"{100*nv/total:.0f}%\nnon-vis", ha="center", fontsize=8, color="#666")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(sev_labels, fontsize=11)
+    ax.set_ylabel("Bug-fix PRs")
+    ax.set_title("Bug Severity by Domain\n"
+                 "44% of critical bugs are non-visual (snapshots irrelevant)")
+    ax.legend(fontsize=10)
+    ax.set_ylim(0, max(max(vis_counts), max(nonvis_counts)) * 1.4)
+    fig.tight_layout()
+    fig.savefig(out / "deep_17_severity_by_domain.png", dpi=150)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Graph 13: Bug-fix coverage gap — the 85/12/4 split
+# ---------------------------------------------------------------------------
+
+def fig_bugfix_coverage_gap(rows, full, out):
+    """Horizontal bar: 3 categories of bug-fix snapshot behavior."""
+    all_bugs = [r for r in rows if r["llm_pr_type"] == "bug-fix"]
+    uncovered, modified, new = 0, 0, 0
+
+    for r in all_bugs:
+        if r["h_has_snapshot_changes"] != "true":
+            uncovered += 1
+            continue
+        pr = full.get(int(r["pr_number"]), {})
+        files = [f for f in pr.get("pr_files", [])
+                 if "snapshot" in f["filename"].lower() or f["filename"].endswith(".svg")]
+        added = [f for f in files if f.get("status") == "added"]
+        mod = [f for f in files if f.get("status") == "modified"]
+        if added and not mod:
+            new += 1
+        elif mod:
+            modified += 1
+        else:
+            uncovered += 1
+
+    labels = [
+        "No snapshots\n(uncovered before & after)",
+        "Modified existing\n(behavior change acknowledged)",
+        "Added new snapshots\n(coverage extended)",
+    ]
+    values = [uncovered, modified, new]
+    colors = ["#EB5757", "#F2994A", "#27AE60"]
+
+    fig, ax = plt.subplots(figsize=(10, 4))
+    bars = ax.barh(range(len(labels)), values, color=colors, edgecolor="white", height=0.55)
+    for bar, v, total in zip(bars, values, [len(all_bugs)] * 3):
+        ax.text(bar.get_width() + 0.5, bar.get_y() + bar.get_height() / 2,
+                f"{v}  ({100 * v / total:.0f}%)", va="center", fontsize=12, fontweight="bold")
+    ax.set_yticks(range(len(labels)))
+    ax.set_yticklabels(labels, fontsize=10)
+    ax.set_xlabel("Number of bug-fix PRs")
+    ax.set_title(f"Bug-Fix PRs: Snapshot Coverage Gap (n={len(all_bugs)})\n"
+                 "85% of bug-fixes ship without adding or updating snapshot coverage")
+    ax.invert_yaxis()
+    fig.tight_layout()
+    fig.savefig(out / "deep_13_bugfix_coverage_gap.png", dpi=150)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Graph 14: Snapshot guarding existing behavior — commit evidence
+# ---------------------------------------------------------------------------
+
+def fig_snapshot_guarding(rows, full, out):
+    """Bar chart: snapshot-fix commits by PR type (feature, refactor, etc.)."""
+    snap_prs = [r for r in rows
+                if r["h_has_snapshot_changes"] == "true"
+                and r["llm_pr_type"] not in ("version-bump", "dependency-bump")
+                and int(r.get("pr_commit_count", 0)) >= 2]
+
+    events_by_type = Counter()
+    prs_by_type = defaultdict(set)
+
+    for r in snap_prs:
+        pr = full.get(int(r["pr_number"]), {})
+        commits = pr.get("pr_commits", [])
+        for i, c in enumerate(commits):
+            msg = (c.get("message") or "").lower()
+            if i > 0 and any(kw in msg for kw in SNAP_KEYWORDS):
+                events_by_type[r["llm_pr_type"]] += 1
+                prs_by_type[r["llm_pr_type"]].add(r["pr_number"])
+
+    types = ["feature", "bug-fix", "refactor", "test"]
+    event_vals = [events_by_type.get(t, 0) for t in types]
+    pr_vals = [len(prs_by_type.get(t, set())) for t in types]
+    type_colors = [C.get(t, "#888") for t in types]
+
+    fig, ax = plt.subplots(figsize=(9, 5))
+    x = range(len(types))
+    bars = ax.bar(x, event_vals, color=type_colors, edgecolor="white", width=0.6)
+    for bar, ev, pr_c in zip(bars, event_vals, pr_vals):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.5,
+                f"{ev} commits\n({pr_c} PRs)", ha="center", va="bottom", fontsize=10)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels([t.replace("-", "\n").title() for t in types], fontsize=11)
+    ax.set_ylabel("Snapshot-fix commits (later in PR)")
+    ax.set_title("Existing Snapshots Guarding Behavior\n"
+                 '"Code first, fix snapshots later" commits by PR type')
+    ax.set_ylim(0, max(event_vals) * 1.35)
+    fig.tight_layout()
+    fig.savefig(out / "deep_14_snapshot_guarding.png", dpi=150)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Graph 15: Covered vs uncovered bug accumulation over time
+# ---------------------------------------------------------------------------
+
+def fig_covered_vs_uncovered(rows, full, out):
+    """Stacked bar: 3-way bug path coverage (covered / file-but-not-path / fully uncovered)."""
+    rows_by_date = sorted(rows, key=lambda r: r.get("pr_created_at", ""))
+    months = sorted(set(r.get("pr_created_at", "")[:7] for r in rows
+                        if r.get("pr_created_at", "")[:7] >= "2026-01"))
+
+    covered_files = set()
+    for r in rows_by_date:
+        if r["h_has_snapshot_changes"] == "true":
+            pr = full.get(int(r["pr_number"]), {})
+            covered_files |= set(
+                f["filename"] for f in pr.get("pr_files", [])
+                if f["filename"].endswith(".py")
+                and "snapshot" not in f["filename"].lower())
+
+    cat_a = []  # path covered (PR has snap changes)
+    cat_b = []  # file covered, path not (PR has no snaps)
+    cat_c = []  # fully uncovered
+
+    for m in months:
+        tui_bugs = [r for r in rows if r.get("pr_created_at", "")[:7] == m
+                    and r["llm_pr_type"] == "bug-fix" and is_tui(r)]
+        a, b, c = 0, 0, 0
+        for r in tui_bugs:
+            if r["h_has_snapshot_changes"] == "true":
+                a += 1
+            else:
+                pr = full.get(int(r["pr_number"]), {})
+                code_files = set(
+                    f["filename"] for f in pr.get("pr_files", [])
+                    if f["filename"].endswith(".py")
+                    and "snapshot" not in f["filename"].lower()
+                    and not f["filename"].endswith(".svg"))
+                if code_files & covered_files:
+                    b += 1
+                else:
+                    c += 1
+        cat_a.append(a)
+        cat_b.append(b)
+        cat_c.append(c)
+
+    fig, ax = plt.subplots(figsize=(10, 5.5))
+    x = range(len(months))
+    w = 0.6
+
+    ax.bar(x, cat_a, width=w, color=C["snap"],
+           label="Bug path snapshot-covered (PR updates snapshots)")
+    ax.bar(x, cat_b, width=w, bottom=cat_a, color="#F2994A",
+           label="File has coverage, but bug path uncovered")
+    bottom2 = [a + b for a, b in zip(cat_a, cat_b)]
+    ax.bar(x, cat_c, width=w, bottom=bottom2, color="#EB5757",
+           label="Fully uncovered area")
+
+    totals = [a + b + c for a, b, c in zip(cat_a, cat_b, cat_c)]
+    for i, t in enumerate(totals):
+        if t > 0:
+            ax.text(i, t + 0.2, str(t), ha="center", va="bottom",
+                    fontsize=10, fontweight="bold")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(months, rotation=30, ha="right")
+    ax.set_ylabel("TUI bug-fix PRs")
+    ax.set_title("Where Bugs Actually Hit: Path-Level Coverage\n"
+                 "66% of post-adoption TUI bugs are on uncovered code paths")
+    ax.legend(fontsize=9, loc="upper right")
+    fig.tight_layout()
+    fig.savefig(out / "deep_15_covered_vs_uncovered.png", dpi=150)
+    plt.close(fig)
+
 
 ALL_FIGURES = [
     ("Bug-fix snapshot pattern (new vs modified)", fig_bugfix_snapshot_pattern),
@@ -573,6 +1078,14 @@ ALL_FIGURES = [
     ("Large PR snapshot involvement", fig_large_pr_snapshots),
     ("Suite coverage vs bugs", fig_suite_coverage_bugs),
     ("SDLC impact summary", fig_sdlc_summary),
+    ("Bug rate with codebase growth context", fig_bug_rate_with_context),
+    ("UX regression breakdown by month", fig_ux_regression_breakdown),
+    ("UX regression snapshot involvement", fig_ux_snapshot_involvement),
+    ("Bug-fix coverage gap", fig_bugfix_coverage_gap),
+    ("Snapshot guarding existing behavior", fig_snapshot_guarding),
+    ("Covered vs uncovered bug accumulation", fig_covered_vs_uncovered),
+    ("Bug-fix domain breakdown", fig_bugfix_domain),
+    ("Severity by domain", fig_severity_by_domain),
 ]
 
 
