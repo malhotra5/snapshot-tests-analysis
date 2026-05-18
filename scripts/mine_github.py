@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# ///
 """
 Mine GitHub PR, issue, commit, and release data from a repository.
 
-Usage:
+Usage (via uv):
     # Small sample (10 most recent merged PRs):
-    python mine_github.py --token $GITHUB_TOKEN --repo OpenHands/OpenHands-CLI --limit 10
+    uv run scripts/mine_github.py --token $GITHUB_TOKEN --repo OpenHands/OpenHands-CLI --limit 10
 
     # Full repository:
-    python mine_github.py --token $GITHUB_TOKEN --repo OpenHands/OpenHands-CLI --all
+    uv run scripts/mine_github.py --token $GITHUB_TOKEN --repo OpenHands/OpenHands-CLI --all
 
     # With local git repo for release tag mapping (recommended):
-    python mine_github.py --token $GITHUB_TOKEN --repo OpenHands/OpenHands-CLI --all --git-dir /path/to/repo
+    uv run scripts/mine_github.py --token $GITHUB_TOKEN --repo OpenHands/OpenHands-CLI --all --git-dir /path/to/repo
 
 Output: mined_prs.json
 """

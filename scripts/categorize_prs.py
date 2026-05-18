@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["requests>=2.31"]
+# ///
 """
 Categorize mined PR data using an LLM and export to CSV.
 
-Usage:
+Usage (via uv):
     # Categorize with LLM:
-    python categorize_prs.py --input mined_prs.json --api-key $API_KEY --model gpt-4o-mini
+    uv run scripts/categorize_prs.py --input mined_prs.json --api-key $API_KEY --model gpt-4o-mini
 
     # With custom base URL (e.g. Azure, local):
-    python categorize_prs.py --input mined_prs.json --api-key $KEY --model gpt-4o --base-url https://my-endpoint/v1
+    uv run scripts/categorize_prs.py --input mined_prs.json --api-key $KEY --model gpt-4o --base-url https://my-endpoint/v1
 
     # Skip LLM, just export mined data + heuristic labels to CSV:
-    python categorize_prs.py --input mined_prs.json --heuristic-only
+    uv run scripts/categorize_prs.py --input mined_prs.json --heuristic-only
 
 Output: categorized_prs.csv
 """
@@ -22,11 +26,7 @@ import sys
 import time
 from pathlib import Path
 
-try:
-    import requests
-    HAS_REQUESTS = True
-except ImportError:
-    HAS_REQUESTS = False
+import requests
 
 
 # ---------------------------------------------------------------------------
@@ -178,10 +178,6 @@ Linked issues:{issues_text or ' none'}
 
 def call_llm(prompt, api_key, model, base_url):
     """Call an OpenAI-compatible chat completion endpoint."""
-    if not HAS_REQUESTS:
-        print("  requests library not installed, skipping LLM call", file=sys.stderr)
-        return None
-
     url = f"{base_url}/chat/completions"
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     payload = {

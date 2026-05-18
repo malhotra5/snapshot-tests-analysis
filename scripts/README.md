@@ -1,17 +1,26 @@
 # PR Analysis Scripts
 
-Two scripts for mining and categorizing GitHub PR data.
+Two scripts for mining and categorizing GitHub PR data. Managed with [uv](https://docs.astral.sh/uv/).
+
+## Setup
+
+```bash
+uv sync
+```
 
 ## 1. `mine_github.py` — Data Mining
 
-Fetches comprehensive metadata for every merged PR: GitHub API fields, file lists, reviews, commits, linked issues, and release tag mapping.
+Fetches comprehensive metadata for every merged PR: GitHub API fields, file lists, reviews, commits, linked issues, and release tag mapping. Saves checkpoints every 20 PRs and resumes from where it left off if interrupted.
 
 ```bash
 # Quick test (5 PRs):
-python mine_github.py --token $GITHUB_TOKEN --repo OpenHands/OpenHands-CLI --limit 5 --git-dir /path/to/repo
+uv run scripts/mine_github.py --token $GITHUB_TOKEN --repo OpenHands/OpenHands-CLI --limit 5 --git-dir /path/to/repo
 
-# Full repo:
-python mine_github.py --token $GITHUB_TOKEN --repo OpenHands/OpenHands-CLI --all --git-dir /path/to/repo
+# Full repo (~310 PRs, ~10 min):
+uv run scripts/mine_github.py --token $GITHUB_TOKEN --repo OpenHands/OpenHands-CLI --all --git-dir /path/to/repo
+
+# Resume after interruption (just re-run the same command):
+uv run scripts/mine_github.py --token $GITHUB_TOKEN --repo OpenHands/OpenHands-CLI --all --git-dir /path/to/repo
 ```
 
 **Requires:** `gh` CLI authenticated, `git` (for release mapping), `curl`.
@@ -36,16 +45,14 @@ Takes the mined JSON, applies heuristic keyword labels and optionally LLM classi
 
 ```bash
 # Heuristic only (no LLM, instant):
-python categorize_prs.py --input mined_prs.json --heuristic-only
+uv run scripts/categorize_prs.py --input mined_prs.json --heuristic-only
 
 # With LLM classification:
-python categorize_prs.py --input mined_prs.json --api-key $OPENAI_API_KEY --model gpt-4o-mini
+uv run scripts/categorize_prs.py --input mined_prs.json --api-key $OPENAI_API_KEY --model gpt-4o-mini
 
 # Custom LLM endpoint:
-python categorize_prs.py --input mined_prs.json --api-key $KEY --model my-model --base-url https://my-llm/v1
+uv run scripts/categorize_prs.py --input mined_prs.json --api-key $KEY --model my-model --base-url https://my-llm/v1
 ```
-
-**Requires:** `requests` (only for LLM mode). Heuristic mode has zero dependencies.
 
 **Output:** `categorized_prs.csv` — 45 columns per PR.
 
@@ -67,24 +74,26 @@ python categorize_prs.py --input mined_prs.json --api-key $KEY --model my-model 
 ## End-to-end example
 
 ```bash
+uv sync
+
 # Mine everything
-python mine_github.py \
+uv run scripts/mine_github.py \
   --token $GITHUB_TOKEN \
   --repo OpenHands/OpenHands-CLI \
   --all \
   --git-dir /path/to/OpenHands-CLI \
-  --output mined_prs.json
+  --output data/mined_prs.json
 
 # Categorize with heuristics (fast, no API key needed)
-python categorize_prs.py \
-  --input mined_prs.json \
+uv run scripts/categorize_prs.py \
+  --input data/mined_prs.json \
   --heuristic-only \
-  --output categorized_prs.csv
+  --output data/categorized_prs.csv
 
 # Or categorize with LLM for better accuracy
-python categorize_prs.py \
-  --input mined_prs.json \
+uv run scripts/categorize_prs.py \
+  --input data/mined_prs.json \
   --api-key $OPENAI_API_KEY \
   --model gpt-4o-mini \
-  --output categorized_prs.csv
+  --output data/categorized_prs.csv
 ```
