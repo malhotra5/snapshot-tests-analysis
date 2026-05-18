@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["requests>=2.31"]
+# dependencies = ["litellm>=1.40"]
 # ///
 """
-Categorize mined PR data using an LLM and export to CSV.
+Categorize mined PR data using an LLM (via litellm) and export to CSV.
 
 Usage (via uv):
-    # Categorize with LLM:
-    uv run scripts/categorize_prs.py --input mined_prs.json --api-key $API_KEY --model gpt-4o-mini
+    # Categorize with LLM (any litellm-supported model):
+    uv run scripts/categorize_prs.py --input mined_prs.json --model gpt-4o-mini
 
-    # With custom base URL (e.g. Azure, local):
-    uv run scripts/categorize_prs.py --input mined_prs.json --api-key $KEY --model gpt-4o --base-url https://my-endpoint/v1
+    # Anthropic:
+    uv run scripts/categorize_prs.py --input mined_prs.json --model anthropic/claude-sonnet-4-20250514
+
+    # Ollama (local):
+    uv run scripts/categorize_prs.py --input mined_prs.json --model ollama/llama3
+
+    # Explicit API key (otherwise uses env vars like OPENAI_API_KEY, ANTHROPIC_API_KEY):
+    uv run scripts/categorize_prs.py --input mined_prs.json --model gpt-4o-mini --api-key $OPENAI_API_KEY
 
     # Skip LLM, just export mined data + heuristic labels to CSV:
     uv run scripts/categorize_prs.py --input mined_prs.json --heuristic-only
@@ -25,8 +31,6 @@ import json
 import sys
 import time
 from pathlib import Path
-
-import requests
 
 
 # ---------------------------------------------------------------------------
@@ -176,11 +180,11 @@ Linked issues:{issues_text or ' none'}
 """
 
 
-def call_llm(prompt, api_key, model, base_url):
-    """Call an OpenAI-compatible chat completion endpoint."""
-    url = f"{base_url}/chat/completions"
-    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-    payload = {
+def call_llm(prompt, model, api_key=None):
+    """Call any litellm-supported model for classification."""
+    import litellm
+
+    kwargs = {
         "model": model,
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -189,13 +193,13 @@ def call_llm(prompt, api_key, model, base_url):
         "temperature": 0.1,
         "max_tokens": 300,
     }
+    if api_key:
+        kwargs["api_key"] = api_key
 
     try:
-        resp = requests.post(url, headers=headers, json=payload, timeout=30)
-        resp.raise_for_status()
-        content = resp.json()["choices"][0]["message"]["content"]
+        resp = litellm.completion(**kwargs)
+        content = resp.choices[0].message.content.strip()
         # Parse JSON from response (handle markdown code blocks)
-        content = content.strip()
         if content.startswith("```"):
             content = "\n".join(content.split("\n")[1:-1])
         return json.loads(content)
@@ -204,10 +208,10 @@ def call_llm(prompt, api_key, model, base_url):
         return None
 
 
-def llm_classify(rec, api_key, model, base_url):
+def llm_classify(rec, model, api_key=None):
     """Classify a PR using the LLM. Returns dict of labels."""
     prompt = build_llm_prompt(rec)
-    result = call_llm(prompt, api_key, model, base_url)
+    result = call_llm(prompt, model, api_key)
     if not result:
         return {
             "llm_pr_type": "",
@@ -280,15 +284,11 @@ def main():
     p.add_argument("--output", default="categorized_prs.csv", help="Output CSV path")
     p.add_argument("--heuristic-only", action="store_true",
                    help="Skip LLM, use keyword heuristics only")
-    p.add_argument("--api-key", help="LLM API key")
-    p.add_argument("--model", default="gpt-4o-mini", help="LLM model name")
-    p.add_argument("--base-url", default="https://api.openai.com/v1",
-                   help="LLM API base URL")
+    p.add_argument("--api-key", help="LLM API key (overrides env vars)")
+    p.add_argument("--model", default="gpt-4o-mini",
+                   help="Any litellm model string, e.g. gpt-4o-mini, "
+                        "anthropic/claude-sonnet-4-20250514, ollama/llama3")
     args = p.parse_args()
-
-    if not args.heuristic_only and not args.api_key:
-        print("Error: --api-key required unless --heuristic-only is set", file=sys.stderr)
-        sys.exit(1)
 
     # Load
     with open(args.input) as f:
@@ -308,7 +308,7 @@ def main():
         # LLM labels (if requested)
         if not args.heuristic_only:
             print(f"  [{i+1}/{len(prs)}] LLM classifying #{num}: {title}")
-            llm_labels = llm_classify(rec, args.api_key, args.model, args.base_url)
+            llm_labels = llm_classify(rec, args.model, args.api_key)
             rec.update(llm_labels)
             if (i + 1) % 20 == 0:
                 time.sleep(1)  # rate limit

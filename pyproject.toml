@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Mining and categorization scripts for analyzing snapshot testing impact on OpenHands-CLI"
 requires-python = ">=3.11"
 dependencies = [
-    "requests>=2.31",
+    "litellm>=1.40",
 ]
 
 [project.scripts]
