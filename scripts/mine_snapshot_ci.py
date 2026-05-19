@@ -5,6 +5,10 @@ For every merged PR created after snapshot adoption (Jan 2026), fetches:
   1. All commits in the PR
   2. The "Run snapshot tests" check-run result for each commit
 
+NOTE: "Run snapshot tests" is NOT a required status check on openhands-cli.
+Required checks are: unit tests, pre-commit, and binary builds. Snapshot
+CI is advisory — it flags mismatches but does not block merge.
+
 Outputs a CSV with one row per PR:
   - pr_number, pr_title, pr_type, has_snapshot_file_changes
   - commits (total count)
@@ -12,13 +16,15 @@ Outputs a CSV with one row per PR:
   - first_commit_snapshot_ci: pass/fail/none
   - last_commit_snapshot_ci: pass/fail/none
   - ever_failed_snapshot_ci: true/false
-  - classification:
-      "regression_caught" = snapshot CI failed at some point, final PR has NO snapshot file changes
-                            (developer fixed code to match baseline)
-      "baseline_updated"  = snapshot CI failed at some point, final PR HAS snapshot file changes
-                            (developer updated baseline to match new behavior)
-      "always_passed"     = snapshot CI never failed
-      "no_ci_data"        = no snapshot check-run found
+  - classification (uses BOTH ever_failed AND last_commit_ci):
+      "resolved_baseline" = CI failed mid-PR, last commit passed, PR has snapshot file changes
+                            (developer updated baseline to acknowledge intentional change)
+      "resolved_code_fix" = CI failed mid-PR, last commit passed, PR has NO snapshot file changes
+                            (developer fixed code to match existing baseline)
+      "merged_with_failure" = CI failed and last commit still failing when merged
+                              (developer ignored advisory failure or it was flaky)
+      "always_passed"     = snapshot CI never failed during the PR
+      "no_ci_data"        = no snapshot check-run found on any commit
 
 Usage:
     export GITHUB_TOKEN=...
@@ -37,7 +43,7 @@ REPO = "OpenHands/openhands-cli"
 SNAPSHOT_JOB_NAME = "Run snapshot tests"
 ADOPTION_MONTH = "2026-01"
 DATA_DIR = Path("data")
-OUTPUT = DATA_DIR / "snapshot_ci_results.csv"
+OUTPUT = DATA_DIR / "snapshot_ci_results_v2.csv"
 
 
 def gh_api(endpoint, jq_filter=None):
@@ -85,13 +91,15 @@ def get_snapshot_check_result(sha):
     return None
 
 
-def classify_pr(ever_failed, has_snapshot_changes):
+def classify_pr(ever_failed, last_commit_ci, has_snapshot_changes):
     if not ever_failed:
         return "always_passed"
+    if last_commit_ci == "failure":
+        return "merged_with_failure"
     if has_snapshot_changes:
-        return "baseline_updated"
+        return "resolved_baseline"
     else:
-        return "regression_caught"
+        return "resolved_code_fix"
 
 
 def load_existing_results():
@@ -124,20 +132,29 @@ def print_summary(results):
 
     counts = Counter(r["classification"] for r in results)
     total = len(results)
-    for cls in ["regression_caught", "baseline_updated", "always_passed", "no_ci_data"]:
+    for cls in ["resolved_code_fix", "resolved_baseline", "merged_with_failure",
+                "always_passed", "no_ci_data"]:
         n = counts.get(cls, 0)
         pct = 100 * n / total if total else 0
-        print(f"  {cls:<20s}: {n:3d} ({pct:.0f}%)")
+        print(f"  {cls:<22s}: {n:3d} ({pct:.0f}%)")
 
-    caught = [r for r in results if r["classification"] == "regression_caught"]
-    if caught:
+    failed = [r for r in results if r["classification"] in
+              ("resolved_code_fix", "resolved_baseline", "merged_with_failure")]
+    if failed:
         print(f"\n{'='*60}")
-        print(f"REGRESSIONS CAUGHT ({len(caught)} PRs)")
-        print(f"Snapshot CI failed → code was fixed → no baseline update")
+        print(f"PRs WHERE SNAPSHOT CI FAILED ({len(failed)})")
         print(f"{'='*60}")
-        for r in caught:
-            print(f"  #{r['pr_number']} [{r['pr_type']}] {r['snapshot_ci_sequence']}")
-            print(f"    {r['pr_title'][:80]}")
+        for cls, label in [
+            ("resolved_code_fix", "🔧 RESOLVED — code fixed (no baseline update)"),
+            ("resolved_baseline", "📝 RESOLVED — baseline updated"),
+            ("merged_with_failure", "⚠️  MERGED WITH FAILURE (advisory CI ignored/flaky)"),
+        ]:
+            group = [r for r in failed if r["classification"] == cls]
+            if group:
+                print(f"\n  {label} ({len(group)}):")
+                for r in group:
+                    print(f"    #{r['pr_number']} [{r['pr_type']}] last_ci={r['last_commit_ci']}")
+                    print(f"      {r['pr_title'][:75]}")
 
 
 def main():
@@ -207,9 +224,15 @@ def main():
         ever_failed = any(r == "failure" for r in ci_results)
         first_ci = ci_results[0] if ci_results else ""
         last_ci = ci_results[-1] if ci_results else ""
-        classification = classify_pr(ever_failed, has_snap)
+        classification = classify_pr(ever_failed, last_ci, has_snap)
 
-        marker = "⚡" if classification == "regression_caught" else "📝" if classification == "baseline_updated" else "✓"
+        markers = {
+            "resolved_code_fix": "🔧",
+            "resolved_baseline": "📝",
+            "merged_with_failure": "⚠️",
+            "always_passed": "✓",
+        }
+        marker = markers.get(classification, "?")
         print(f" {len(commits)} commits | {sequence} | {classification} {marker}")
 
         row = {
