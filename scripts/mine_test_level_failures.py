@@ -9,15 +9,27 @@ each failing test was resolved by a baseline update or a code fix.
 GitHub retains job logs for ~90 days, so older PRs will have expired
 logs. The script records which PRs have available vs expired logs.
 
+Resolution logic:
+  For each failing test, map it to its snapshot directory. If that
+  directory has files modified in the final merged PR → baseline_updated.
+  If not → code_fixed (the developer fixed code to match the existing
+  baseline rather than updating the snapshot).
+
 Outputs:
   data/test_level_failures.csv — one row per (PR, commit, test) triple:
     pr_number, commit_sha, job_id, log_status, failing_test,
-    test_file, snapshot_dir_changed, resolution
+    test_file, snapshot_dir, snapshot_dir_changed, resolution
 
   data/test_level_summary.csv — one row per PR:
     pr_number, pr_title, classification_v2, logs_available,
     num_failing_tests, num_resolved_baseline, num_resolved_code_fix,
     num_unresolved, refined_classification
+
+  data/pr_changed_snapshot_files.csv — one row per snapshot file
+    changed in a PR's final merge diff:
+    pr_number, changed_file, snapshot_dir
+    Persists the full list of changed snapshot files for each PR so
+    downstream scripts don't need to re-query the GitHub API.
 
 Usage:
     export GITHUB_TOKEN=...
@@ -38,6 +50,7 @@ SNAPSHOT_JOB_NAME = "Run snapshot tests"
 DATA_DIR = Path("data")
 DETAIL_OUTPUT = DATA_DIR / "test_level_failures.csv"
 SUMMARY_OUTPUT = DATA_DIR / "test_level_summary.csv"
+CHANGED_FILES_OUTPUT = DATA_DIR / "pr_changed_snapshot_files.csv"
 
 # Snapshot SVG files live under tests/snapshots/ — each test module has
 # a corresponding snapshot directory. E.g.:
@@ -131,17 +144,28 @@ def extract_failing_tests(log_text):
     return sorted(tests)
 
 
-def test_name_to_snapshot_dir(test_name):
-    """Map a test name to its expected snapshot directory.
+def test_name_to_snapshot_dirs(test_name):
+    """Map a test name to its possible snapshot directories.
+
+    Snapshot SVGs can live in two locations:
+      tests/snapshots/e2e/test_foo/            (flat layout)
+      tests/snapshots/e2e/__snapshots__/test_foo/  (nested layout)
 
     E.g. 'tests/snapshots/e2e/test_app_initial_state.py::TestAppInitialState::test_app_initial_state'
-      → 'tests/snapshots/e2e/test_app_initial_state/'
+      → ['tests/snapshots/e2e/test_app_initial_state/',
+         'tests/snapshots/e2e/__snapshots__/test_app_initial_state/']
     """
-    # Extract the file path portion before ::
     file_path = test_name.split("::")[0]
-    # The snapshot dir is the same path minus .py extension
-    snap_dir = file_path.replace(".py", "/")
-    return snap_dir
+    # The dir name matches the test module name (minus .py)
+    module_dir = file_path.replace(".py", "/")
+
+    # Also check for __snapshots__ subdirectory layout
+    parts = file_path.split("/")
+    module_name = parts[-1].replace(".py", "")
+    parent = "/".join(parts[:-1])
+    nested_dir = f"{parent}/__snapshots__/{module_name}/"
+
+    return [module_dir, nested_dir]
 
 
 def get_pr_changed_files(pr_number):
@@ -161,9 +185,15 @@ def get_pr_changed_files(pr_number):
     return files
 
 
-def check_snapshot_dir_changed(snap_dir, changed_files):
-    """Check if any file under snap_dir was changed in the PR."""
-    return any(f.startswith(snap_dir) for f in changed_files)
+def check_snapshot_dir_changed(test_name, changed_files):
+    """Check if any snapshot file for this test was changed in the PR.
+
+    Checks both flat and __snapshots__/ directory layouts.
+    """
+    for snap_dir in test_name_to_snapshot_dirs(test_name):
+        if any(f.startswith(snap_dir) for f in changed_files):
+            return True
+    return False
 
 
 DETAIL_FIELDS = [
@@ -176,7 +206,12 @@ SUMMARY_FIELDS = [
     "pr_number", "pr_title", "classification_v2", "logs_available",
     "num_failing_commits_with_logs", "unique_failing_tests",
     "num_resolved_baseline", "num_resolved_code_fix",
+    "snapshot_dirs_changed_in_pr", "failing_test_dirs",
     "refined_classification",
+]
+
+CHANGED_FILES_FIELDS = [
+    "pr_number", "changed_file", "snapshot_dir",
 ]
 
 
@@ -196,6 +231,7 @@ def main():
 
     detail_rows = []
     summary_rows = []
+    changed_snapshot_rows = []  # persisted snapshot files per PR
     logs_available_count = 0
     logs_expired_count = 0
     cutoff_pr = None
@@ -210,6 +246,22 @@ def main():
         commits = get_pr_commits(pr_num)
         changed_files = get_pr_changed_files(pr_num)
         time.sleep(0.05)
+
+        # Persist all snapshot files changed in this PR's final merge diff
+        for f in changed_files:
+            if f.startswith(SNAPSHOT_BASE):
+                # Derive the snapshot dir (e.g. tests/snapshots/e2e/test_foo/)
+                parts = f.split("/")
+                # Find the test module dir: everything up to and including
+                # the directory named after the test file
+                # e.g. tests/snapshots/e2e/test_foo/some_snapshot.svg
+                #   → tests/snapshots/e2e/test_foo/
+                snap_dir = "/".join(parts[:4]) + "/" if len(parts) > 4 else f
+                changed_snapshot_rows.append({
+                    "pr_number": pr_num,
+                    "changed_file": f,
+                    "snapshot_dir": snap_dir,
+                })
 
         # Track per-PR state
         pr_has_any_logs = False
@@ -264,9 +316,9 @@ def main():
 
                 for test in tests:
                     test_file = test.split("::")[0]
-                    snap_dir = test_name_to_snapshot_dir(test)
+                    snap_dirs = test_name_to_snapshot_dirs(test)
                     dir_changed = check_snapshot_dir_changed(
-                        snap_dir, changed_files
+                        test, changed_files
                     )
                     resolution = "baseline_updated" if dir_changed else "code_fixed"
                     pr_failing_tests.add((test, resolution))
@@ -278,7 +330,7 @@ def main():
                         "log_status": "available",
                         "failing_test": test,
                         "test_file": test_file,
-                        "snapshot_dir": snap_dir,
+                        "snapshot_dir": "; ".join(snap_dirs),
                         "snapshot_dir_changed": str(dir_changed),
                         "resolution": resolution,
                     })
@@ -305,6 +357,19 @@ def main():
         n_baseline = sum(1 for r in unique_tests.values() if r == "baseline_updated")
         n_code_fix = sum(1 for r in unique_tests.values() if r == "code_fixed")
 
+        # Collect snapshot dirs changed in this PR (from persisted data)
+        pr_snap_dirs = sorted(set(
+            row["snapshot_dir"]
+            for row in changed_snapshot_rows
+            if row["pr_number"] == pr_num
+        ))
+        # Collect failing test dirs (both possible layouts)
+        failing_dirs = sorted(set(
+            d
+            for test in unique_tests
+            for d in test_name_to_snapshot_dirs(test)
+        ))
+
         # Refined classification
         if not pr_has_any_logs:
             refined = f"logs_expired ({v2_class})"
@@ -326,6 +391,8 @@ def main():
             "unique_failing_tests": len(unique_tests),
             "num_resolved_baseline": n_baseline,
             "num_resolved_code_fix": n_code_fix,
+            "snapshot_dirs_changed_in_pr": "; ".join(pr_snap_dirs),
+            "failing_test_dirs": "; ".join(failing_dirs),
             "refined_classification": refined,
         })
 
@@ -344,10 +411,17 @@ def main():
         writer.writeheader()
         writer.writerows(summary_rows)
 
+    # Save changed snapshot files CSV
+    with open(CHANGED_FILES_OUTPUT, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=CHANGED_FILES_FIELDS)
+        writer.writeheader()
+        writer.writerows(changed_snapshot_rows)
+
     # Print overall summary
     print(f"\n{'='*60}")
     print(f"Detail rows: {len(detail_rows)} → {DETAIL_OUTPUT}")
     print(f"Summary rows: {len(summary_rows)} → {SUMMARY_OUTPUT}")
+    print(f"Changed snapshot files: {len(changed_snapshot_rows)} → {CHANGED_FILES_OUTPUT}")
     print(f"{'='*60}")
     print(f"PRs with logs available: {logs_available_count}")
     print(f"PRs with logs expired:   {logs_expired_count}")
