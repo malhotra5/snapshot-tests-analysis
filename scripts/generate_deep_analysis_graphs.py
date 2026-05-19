@@ -291,8 +291,7 @@ def fig_forcing_function(rows, full, out):
     ax.set_xticklabels(months, rotation=30, ha="right")
     ax.set_ylabel("% of TUI PRs including snapshot updates")
     ax.set_ylim(-5, 105)
-    ax.set_title("Snapshot as Forcing Function\n"
-                 "What fraction of TUI-changing PRs update snapshot baselines?")
+    ax.set_title("Snapshot as Forcing Function")
     ax.legend()
     fig.tight_layout()
     fig.savefig(out / "deep_4_forcing_function.png", dpi=150)
@@ -397,7 +396,7 @@ def fig_review_speed(rows, full, out):
     ax.set_ylabel("Median lines changed")
     ax.set_title("PR Size\n(TUI PRs, post-adoption)")
 
-    fig.suptitle("Snapshot PRs: Faster Reviews Despite Being Larger", fontsize=14,
+    fig.suptitle("Time to First Review vs PR Size", fontsize=14,
                  fontweight="bold", y=1.02)
     fig.tight_layout()
     fig.savefig(out / "deep_6_review_speed.png", dpi=150, bbox_inches="tight")
@@ -613,8 +612,7 @@ def fig_bug_rate_with_context(rows, full, out):
     ax.set_xticks(x)
     ax.set_xticklabels(months, rotation=30, ha="right")
     ax.set_ylabel("UX-regression bugs / cumulative TUI features", fontsize=10)
-    ax.set_title("UX Regression Rate Normalized by Codebase Size\n"
-                 "Bugs per feature dropped from 0.45 to 0.02–0.10 post-adoption")
+    ax.set_title("UX Regression Rate Normalized by Codebase Size")
     ax.legend(fontsize=10)
     ax.set_ylim(-0.02, max(ux_per_feat) * 1.25)
 
@@ -839,8 +837,7 @@ def fig_bugfix_domain(rows, full, out):
     ax.set_yticks(y)
     ax.set_yticklabels(labels, fontsize=10)
     ax.set_xlabel("Number of bug-fix PRs")
-    ax.set_title(f"Bug-Fixes by Code Domain (n={len(bugfixes)})\n"
-                 "35% of bugs are non-visual — snapshots can't help there")
+    ax.set_title(f"Bug-Fixes by Code Domain (n={len(bugfixes)})")
     ax.invert_yaxis()
     ax.legend(fontsize=9, loc="lower right")
     fig.tight_layout()
@@ -890,8 +887,7 @@ def fig_severity_by_domain(rows, full, out):
     ax.set_xticks(x)
     ax.set_xticklabels(sev_labels, fontsize=11)
     ax.set_ylabel("Bug-fix PRs")
-    ax.set_title("Bug Severity by Domain\n"
-                 "44% of critical bugs are non-visual (snapshots irrelevant)")
+    ax.set_title("Bug Severity by Domain")
     ax.legend(fontsize=10)
     ax.set_ylim(0, max(max(vis_counts), max(nonvis_counts)) * 1.4)
     fig.tight_layout()
@@ -940,8 +936,7 @@ def fig_bugfix_coverage_gap(rows, full, out):
     ax.set_yticks(range(len(labels)))
     ax.set_yticklabels(labels, fontsize=10)
     ax.set_xlabel("Number of bug-fix PRs")
-    ax.set_title(f"Bug-Fix PRs: Snapshot Coverage Gap (n={len(all_bugs)})\n"
-                 "85% of bug-fixes ship without adding or updating snapshot coverage")
+    ax.set_title(f"Bug-Fix PRs: Snapshot Coverage Gap (n={len(all_bugs)})")
     ax.invert_yaxis()
     fig.tight_layout()
     fig.savefig(out / "deep_13_bugfix_coverage_gap.png", dpi=150)
@@ -986,8 +981,7 @@ def fig_snapshot_guarding(rows, full, out):
     ax.set_xticks(x)
     ax.set_xticklabels([t.replace("-", "\n").title() for t in types], fontsize=11)
     ax.set_ylabel("Snapshot-fix commits (later in PR)")
-    ax.set_title("Existing Snapshots Guarding Behavior\n"
-                 '"Code first, fix snapshots later" commits by PR type')
+    ax.set_title('"Code First, Fix Snapshots Later"')
     ax.set_ylim(0, max(event_vals) * 1.35)
     fig.tight_layout()
     fig.savefig(out / "deep_14_snapshot_guarding.png", dpi=150)
@@ -1060,8 +1054,7 @@ def fig_covered_vs_uncovered(rows, full, out):
     ax.set_xticks(x)
     ax.set_xticklabels(months, rotation=30, ha="right")
     ax.set_ylabel("TUI bug-fix PRs")
-    ax.set_title("Where Bugs Actually Hit: Path-Level Coverage\n"
-                 "66% of post-adoption TUI bugs are on uncovered code paths")
+    ax.set_title("Path-Level Coverage of TUI Bugs")
     ax.legend(fontsize=9, loc="upper right")
     fig.tight_layout()
     fig.savefig(out / "deep_15_covered_vs_uncovered.png", dpi=150)

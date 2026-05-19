@@ -516,8 +516,7 @@ def generate_graph(b1_count, b2_count, b3_count, cat_a_count, cat_c_count, out_d
     ax.set_yticks(range(len(labels)))
     ax.set_yticklabels(labels, fontsize=10)
     ax.set_xlabel("Post-adoption TUI bug-fix PRs")
-    ax.set_title(f"Reclassified Path-Level Coverage (n={total})\n"
-                 "Accounting for indirect coverage from snapshot test flows")
+    ax.set_title(f"Reclassified Path-Level Coverage (n={total})")
     ax.invert_yaxis()
     fig.tight_layout()
     fig.savefig(out_dir / "deep_18_reclassified_coverage.png", dpi=150)

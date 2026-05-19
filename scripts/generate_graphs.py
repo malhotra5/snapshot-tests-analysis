@@ -280,7 +280,7 @@ def fig_critical_bug_rate_timeline(rows, out):
     ax.set_xticks(x)
     ax.set_xticklabels(months, rotation=30, ha="right")
     ax.set_ylabel("% of agent PRs")
-    ax.set_title("Agent Bug Rate Over Time (Critical vs UX Regression)")
+    ax.set_title("Agent Bug Rate Over Time")
     ax.legend()
     fig.tight_layout()
     fig.savefig(out / "5_bug_rate_timeline.png", dpi=150)
