@@ -1,0 +1,196 @@
+pr_number,pr_title,pr_type,has_snapshot_file_changes,num_commits,snapshot_ci_sequence,first_commit_ci,last_commit_ci,ever_failed,classification
+738,[codex] Preserve explicit LLM max token overrides,bug-fix,False,2,"success,success",success,success,False,always_passed
+737,chore: Move good-first-issue labeler to SDK script for smaller blast radius,ci,False,2,"cancelled,success",cancelled,success,False,always_passed
+732,fix(tui): disable markup in conversation notifications,bug-fix,False,2,"none,success",none,success,False,always_passed
+731,fix: preserve unicode in JSON output,bug-fix,False,2,"none,success",none,success,False,always_passed
+728,Bump version to 1.16.0,version-bump,True,1,success,success,success,False,always_passed
+724,Bump SDK packages to v1.21.0,version-bump,False,2,"success,success",success,success,False,always_passed
+719,Bump SDK packages to v1.20.1,dependency-bump,True,9,"failure,failure,failure,failure,failure,failure,failure,success,success",failure,success,True,baseline_updated
+717,fix: emit valid JSONL from --json mode,bug-fix,False,2,"cancelled,success",cancelled,success,False,always_passed
+715,feat: Add workspace-specific prompt history with fuzzy search modal,feature,True,8,"failure,success,success,success,failure,none,success,success",failure,success,True,baseline_updated
+714,tui: list 'openhands' provider first in settings dropdown,bug-fix,False,3,"success,success,success",success,success,False,always_passed
+711,fix: migrate login to V1 settings/users endpoints,bug-fix,False,1,success,success,success,False,always_passed
+710,Bump version to 1.15.1,version-bump,True,1,success,success,success,False,always_passed
+709,Bump openhands-sdk and openhands-tools to 1.19.1,dependency-bump,False,1,success,success,success,False,always_passed
+704,Bump SDK packages to v1.19.0,version-bump,False,2,"success,success",success,success,False,always_passed
+703,docs(acp): add docstring to _ACPContext Protocol,docs,False,3,"none,failure,success",none,success,True,regression_caught
+699,tests: isolate persistence directories to prevent writes to user home,test,False,5,"success,none,success,success,failure",success,failure,True,regression_caught
+698,fix(tui): preserve typed character when auto-focusing input,bug-fix,True,3,"success,success,failure",success,failure,True,baseline_updated
+697,settings: clear stale max tokens on model identity change,bug-fix,False,2,"success,success",success,success,False,always_passed
+695,fix(tui): resolve 'no running event loop' in RichLogVisualizer (fixes #696),bug-fix,False,3,"none,success,success",none,success,False,always_passed
+693,Bump version to 1.15.0,version-bump,True,1,success,success,success,False,always_passed
+692,ci: run PR review on fork PRs,ci,False,6,"success,success,cancelled,success,success,success",success,success,False,always_passed
+691,chore: use OPENHANDS_BOT_GITHUB_PAT_INSTALL_WEBSITE for install-openhands-website,ci,False,10,"success,cancelled,none,none,success,success,cancelled,success,success,success",success,success,False,always_passed
+690,chore: add TODO for PAT rename in update-install-website.yml,ci,False,2,"success,success",success,success,False,always_passed
+688,tui: make history panel keyboard navigable,feature,True,2,"success,success",success,success,False,always_passed
+687,fix(settings): preserve native modal Tab navigation in Settings,bug-fix,True,4,"success,none,success,success",success,success,False,always_passed
+686,tui: Add ESC/Ctrl+C/Ctrl-Q key bindings to modals,bug-fix,True,2,"success,success",success,success,False,always_passed
+685,chore: use OPENHANDS_BOT_GITHUB_PAT_PUBLIC,ci,False,1,success,success,success,False,always_passed
+684,chore: rename ALLHANDS_BOT_GITHUB_PAT to PAT_TOKEN,ci,False,1,success,success,success,False,always_passed
+667,build: enforce minimum uv version,dependency-bump,False,3,"success,cancelled,success",success,success,False,always_passed
+666,cli: replace prompt_toolkit with rich for styled output,refactor,False,4,"success,success,success,success",success,success,False,always_passed
+665,tests: prevent unawaited coroutine warnings in async tests,test,False,1,success,success,success,False,always_passed
+663,makefile: avoid local .openhands writes during make test,bug-fix,False,1,success,success,success,False,always_passed
+662,Bump SDK packages to v1.17.0,dependency-bump,False,4,"failure,cancelled,success,success",failure,success,True,regression_caught
+658,fix(settings): reset max_input_tokens on model change,bug-fix,False,4,"cancelled,success,cancelled,success",cancelled,success,False,always_passed
+657,fix(setup): make Console injectable for better testability,refactor,False,2,"none,success",none,success,False,always_passed
+654,ci: retire Blacksmith from all GitHub Actions workflows,ci,False,1,success,success,success,False,always_passed
+648,feat: Register built-in subagents before conversation start,feature,False,4,"success,failure,success,success",success,success,True,regression_caught
+645,fix(tui): correct typo 'converastion' in notification message,bug-fix,False,2,"none,success",none,success,False,always_passed
+643,feat(cloud): Migrate openhands cloud to V1 API endpoints,feature,False,2,"success,success",success,success,False,always_passed
+638,Bump version to 1.14.0,version-bump,True,1,success,success,success,False,always_passed
+637,Bump SDK packages to v1.16.1,dependency-bump,False,1,success,success,success,False,always_passed
+636,feat: ensure backward compatibility for persisted conversations with DelegateTool,feature,False,8,"cancelled,success,success,cancelled,success,failure,success,success",cancelled,success,True,regression_caught
+631,docs: add contributors section to README,docs,False,5,"success,success,success,success,success",success,success,False,always_passed
+630,build: add 7-day uv freshness guardrail,ci,False,4,"success,success,success,success",success,success,False,always_passed
+628,skills: add cli-release skill for guided release workflow,feature,False,6,"success,success,success,cancelled,success,success",success,success,False,always_passed
+625,docs: update README trusted-by logos for dark mode,docs,False,1,success,success,success,False,always_passed
+622,Bump SDK packages to v1.16.0,dependency-bump,False,1,success,success,success,False,always_passed
+621,tui: refactor richlog visualizer rendering paths (#618),refactor,False,3,"cancelled,success,success",cancelled,success,False,always_passed
+620,fix(types): add -> None return type to __init__ methods,refactor,False,2,"none,success",none,success,False,always_passed
+619,fix(tui): add type alias for collapsible content parameter,refactor,False,3,"none,success,success",none,success,False,always_passed
+617,Add trusted-by logos to top of README,docs,False,4,"success,success,success,success",success,success,False,always_passed
+616,Bump SDK packages to v1.15.0,dependency-bump,False,3,"success,success,success",success,success,False,always_passed
+610,fix(tui): add missing return type hints to TUI methods,refactor,False,2,"none,success",none,success,False,always_passed
+606,feat: `make run-watch` - Fast TUI Development,feature,False,13,"none,none,none,success,success,success (sampled 6/13)",none,success,False,always_passed
+595,fix(tui): consolidate duplicate get_conversation_summary logic,refactor,False,2,"none,failure",none,failure,True,regression_caught
+590,feat(tui): colored status icon,feature,True,2,"success,success",success,success,False,always_passed
+589,Bump version to 1.13.1,version-bump,True,1,success,success,success,False,always_passed
+587,fix: bump agent-client-protocol to >=0.8.1,dependency-bump,False,4,"success,success,success,success",success,success,False,always_passed
+584,fix(types): add missing return type annotations,refactor,False,3,"none,success,success",none,success,False,always_passed
+581,tui: add tab navigation hint to footers (#512),bug-fix,True,9,"none,none,none,none,success,none,none,success,success",none,success,False,always_passed
+578,refactoring(cli): print_console,refactor,False,2,"success,success",success,success,False,always_passed
+577,refactoring(cli/tui): richlog visualizer,refactor,False,5,"success,success,cancelled,success,success",success,success,False,always_passed
+570,fix(web): derive URLs from request headers for reverse-proxy support,bug-fix,False,4,"success,success,success,success",success,success,False,always_passed
+564,feat: round border,feature,True,1,success,success,success,False,always_passed
+560,refactor(shared): extract parse_slash_command to shared module,refactor,False,2,"none,success",none,success,False,always_passed
+559,fix(acp): replace global _ACP_CACHE_DIR with @lru_cache,refactor,False,4,"none,success,success,success",none,success,False,always_passed
+558,fix(types): add missing type hints to function parameters and __init__ methods,refactor,False,3,"none,success,success",none,success,False,always_passed
+554,docs: Add release procedure documentation,docs,False,5,"success,none,cancelled,cancelled,success",success,success,False,always_passed
+553,Bump version to 1.13.0,version-bump,True,9,"success,none,none,none,success,none,success,cancelled,success",success,success,False,always_passed
+552,ci: Update bump-version workflow to regenerate snapshot tests,ci,False,7,"success,none,none,none,success,none,success",success,success,False,always_passed
+550,feat: dropdown menu ,feature,True,2,"success,success",success,success,False,always_passed
+546,tui: implement conditional autoscrolling,bug-fix,False,2,"success,success",success,success,False,always_passed
+543,fix(acp): send session/update after session/new response,bug-fix,False,3,"success,success,success",success,success,False,always_passed
+542,feat: add /settings slash command to open settings modal,feature,False,2,"success,success",success,success,False,always_passed
+534,fix: remove unused runtime image pull and env var from gui_launcher,refactor,False,4,"success,success,success,success",success,success,False,always_passed
+532,fix(types): add missing type hints to handle_resume_logic and _meta,refactor,False,3,"none,success,success",none,success,False,always_passed
+531,fix(acp): lazy-init ACP_CACHE_DIR to avoid import side effects,bug-fix,False,2,"none,success",none,success,False,always_passed
+528,fix(Makefile): help and pre-commit,bug-fix,False,2,"none,success",none,success,False,always_passed
+527,Bump SDK packages to v1.11.5,version-bump,False,5,"cancelled,success,success,success,success",cancelled,success,False,always_passed
+524,fix(tests): make creating_agent_plan snapshot test deterministic,test,True,1,success,success,success,False,always_passed
+523,ci: disable pull_request_target for PR review,ci,False,9,"failure,success,success,cancelled,success,success,none,none,success",failure,success,True,regression_caught
+522,test(snapshots): update select_all e2e snapshots for v1.12.2,test,True,1,success,success,success,False,always_passed
+521,ci: disable uv cache in untrusted agent workflows,ci,False,3,"failure,failure,success",failure,success,True,regression_caught
+516,Migrate PR review workflow to use extensions action,ci,False,10,"success,success,success,cancelled,success,none,success,success,success,success",success,success,False,always_passed
+515,Bump version to 1.12.2,version-bump,True,2,"failure,success",failure,success,True,baseline_updated
+514,fix: Clear values of settings modal using .clear() instead of setting as blank,bug-fix,False,4,"none,success,success,success",none,success,False,always_passed
+511,feat(tui): bind ctrl+a to select all text in input area,feature,True,7,"none,success,cancelled,failure,cancelled,failure,success",none,success,True,baseline_updated
+510,Settings: enable memory condensation by default in basic and advanced modes,bug-fix,False,1,success,success,success,False,always_passed
+509,fix(tui): add ComposeResult return type hints to compose() methods,refactor,False,2,"none,success",none,success,False,always_passed
+505,test: update comment reference to OpenHands/extensions,docs,False,1,success,success,success,False,always_passed
+504,fix: default collapsibles to collapsed state,bug-fix,True,4,"failure,failure,failure,success",failure,success,True,baseline_updated
+497,tui: only show agent name prefix for non-default agents,bug-fix,True,7,"failure,failure,failure,none,success,none,success",failure,success,True,baseline_updated
+496,Bump version to 1.12.1,version-bump,True,2,"failure,success",failure,success,True,baseline_updated
+495,Bump SDK packages to v1.11.4,dependency-bump,True,3,"failure,success,success",failure,success,True,baseline_updated
+490,tui: remove grey vertical border from Collapsible widgets,refactor,True,10,"failure,failure,failure,success,failure,failure,success,success,none,success",failure,success,True,baseline_updated
+487,feat: add OpenHands stop hooks for pre-commit validation,feature,False,9,"failure,cancelled,success,none,cancelled,cancelled,success,success,success",failure,success,True,regression_caught
+484,fix: pass Laminar API key as action input in PR review workflow,ci,False,1,success,success,success,False,always_passed
+482,Rename auth console helper and tighten request kwargs typing,refactor,False,5,"success,success,success,success,success",success,success,False,always_passed
+480,Bump version to 1.12.0,version-bump,True,2,"failure,success",failure,success,True,baseline_updated
+479,Add e2e snapshot tests for confirmation mode,test,True,6,"cancelled,cancelled,success,success,success,success",cancelled,success,False,always_passed
+478,chore: update skills path references,docs,False,1,success,success,success,False,always_passed
+477,refactor: use consolidated pr-review action from SDK,ci,False,3,"success,success,success",success,success,False,always_passed
+476,fix(tests): stabilize input cursor snapshots,test,False,1,success,success,success,False,always_passed
+474,"feat: Show loaded resources (skills, hooks, MCPs) and add /skills command",feature,True,58,"failure,success,success,cancelled,success,success (sampled 6/58)",failure,success,True,baseline_updated
+473,fix: restore switch handling after state refactor,bug-fix,False,3,"success,success,success",success,success,False,always_passed
+471,docs: minor documentation tweaks,docs,False,2,"failure,success",failure,success,True,regression_caught
+470,Add LMNR_PROJECT_API_KEY and all-hands-bot reviewer support,ci,False,1,success,success,success,False,always_passed
+467,docs: clarify lint before commits,docs,False,1,success,success,success,False,always_passed
+464,ci: add daily good first issue labeler workflow,ci,False,8,"success,failure,cancelled,none,success,success,success,success",success,success,True,regression_caught
+461,Bump openhands-sdk and openhands-tools to 1.11.0,dependency-bump,False,4,"success,success,cancelled,success",success,success,False,always_passed
+460,docs: clarify lint-before-commit guidance,docs,False,3,"success,success,success",success,success,False,always_passed
+458,fix(widgets): remove unnecessary type: ignore in collapsible.py,refactor,False,2,"none,success",none,success,False,always_passed
+455,ci: enhance type checking workflow with code quality analysis and auto-fix PRs,ci,False,2,"success,success",success,success,False,always_passed
+454,add close button and Escape to dismiss history panel,bug-fix,True,8,"failure,failure,none,failure,failure,none,failure,success",failure,success,True,baseline_updated
+448,fix: critic - no module named posthog,bug-fix,False,3,"success,success,success",success,success,False,always_passed
+447,feat: add iterative refinement mode using critic model,feature,True,44,"success,success,success,success,success,success (sampled 6/44)",success,success,False,always_passed
+445,"Add timeout, max_tokens and max_size to the LLM settings configuration card",feature,False,16,"none,none,failure,success,success,success (sampled 6/16)",none,success,True,regression_caught
+442,Add automated PR review workflow using OpenHands,ci,False,2,"success,success",success,success,False,always_passed
+441,Add GitHub issue templates for bug reports and feature requests,docs,False,9,"success,success,success,success,cancelled,cancelled,cancelled,none,success",success,success,False,always_passed
+439,fix(tui): reset token metrics when creating new conversation,bug-fix,True,1,success,success,success,False,always_passed
+438,tui: hide slash commands from vertical scroll,bug-fix,True,1,success,success,success,False,always_passed
+437,Add E2E snapshot test for multi-line mode submission,test,True,1,success,success,success,False,always_passed
+435,Add E2E snapshot tests for history panel and conversation switching,bug-fix,True,1,success,success,success,False,always_passed
+433,Add e2e snapshot tests for initial setup flow,test,True,7,"success,success,success,success,success,failure,success",success,success,True,baseline_updated
+432,Add e2e snapshot test for creating agent plan trajectory + fix test flakiness,test,True,5,"failure,failure,success,success,success",failure,success,True,baseline_updated
+428,feat: Load hooks from ~/.openhands/hooks.json in CLI,bug-fix,False,3,"none,none,none",none,none,False,always_passed
+427,feat(e2e): add mock LLM server and full UI e2e tests,test,True,35,"none,none,none,success,success,success (sampled 6/35)",none,success,False,always_passed
+425,docs: clarify uv usage in AGENTS,docs,False,2,"none,none",none,none,False,always_passed
+424,cli: add --yolo as alias for --always-approve,feature,False,1,none,none,none,False,always_passed
+422,update critic feature description,feature,True,6,"none,cancelled,cancelled,success,failure,success",none,success,True,baseline_updated
+421,refactor: add reactive state management + decouple main app from conversation management,refactor,True,80,"none,none,none,failure,success,success (sampled 6/80)",none,success,True,baseline_updated
+420,"Remove spinner in headless mode, output status messages once",feature,False,1,none,none,none,False,always_passed
+418,Bump version to 1.11.0,version-bump,False,1,none,none,none,False,always_passed
+417,Bump openhands-sdk and openhands-tools to 1.10.0,dependency-bump,False,1,none,none,none,False,always_passed
+402,fix: pin rich<14.3.0 to fix autocomplete shutdown crash,bug-fix,False,4,"none,none,none,none",none,none,False,always_passed
+400,fix: display agent MessageEvents in TUI when critic is enabled,bug-fix,False,3,"none,none,none",none,none,False,always_passed
+394,feat: support auth for local ACP agent,feature,False,4,"none,none,none,none",none,none,False,always_passed
+391,Fix critic feedback text to include 'success' prediction,bug-fix,True,3,"none,none,none",none,none,False,always_passed
+390,Preserve condenser settings from agent_settings.json,bug-fix,False,6,"none,none,none,none,none,none",none,none,False,always_passed
+388,(Hotfix): fix headless mode to work with env overrides + disable critic in headless mode,bug-fix,False,39,"none,none,none,none,none,none (sampled 6/39)",none,none,False,always_passed
+385,Add weekly type checking report workflow,ci,False,1,none,none,none,False,always_passed
+383,Bump version to 1.10.0,version-bump,False,1,none,none,none,False,always_passed
+382,Bump openhands-sdk and openhands-tools to 1.9.0,dependency-bump,False,1,none,none,none,False,always_passed
+381,Add workflow to bump version and create draft PR,ci,False,1,none,none,none,False,always_passed
+380,Add workflow to bump agent-sdk versions,ci,False,1,none,none,none,False,always_passed
+379,fix: require --override-with-envs flag to apply LLM env vars,bug-fix,False,2,"none,none",none,none,False,always_passed
+377,feat: send metadata for models using llm-proxy base URLs,feature,False,4,"none,none,none,none",none,none,False,always_passed
+375,Fix capitalization in command palette for Plan and Settings,bug-fix,False,1,none,none,none,False,always_passed
+374,docs(CONTRIBUTING): Correct install pre-commit hooks command ,docs,False,1,none,none,none,False,always_passed
+372,fix: Issue with memory condensation not being editable,bug-fix,False,1,none,none,none,False,always_passed
+371,Clean-up dead-code in `openhands-cli/argparsers`,refactor,False,1,none,none,none,False,always_passed
+368,[Refactor]: Auto-login when cloud credentials are invalid,refactor,False,7,"none,none,none,none,none,none,none",none,none,False,always_passed
+366,feat: support agent setup via environment variables,feature,False,6,"none,none,none,none,none,none",none,none,False,always_passed
+364,Patch release 1.9.1,version-bump,False,1,none,none,none,False,always_passed
+363,(Hotfix): CLI crashes when opening MCP panel,bug-fix,True,1,none,none,none,False,always_passed
+361,Fix cloud login to respect llm_base_url from settings,bug-fix,False,2,"none,none",none,none,False,always_passed
+360,Add Critic Result Display in TUI,feature,True,65,"none,none,none,none,none,none (sampled 6/65)",none,none,False,always_passed
+359,Release 1.9.0 ,version-bump,False,2,"none,none",none,none,False,always_passed
+357,feat: Add details about recommended models and use cases in CLI settings (#246),feature,True,8,"none,none,none,none,none,none,none,none",none,none,False,always_passed
+354,Bump SDK packages to v1.8.2,dependency-bump,False,1,none,none,none,False,always_passed
+351,Ignore whitespace-only reasoning_content in streaming,bug-fix,False,2,"none,none",none,none,False,always_passed
+350,Chore: remove --exp feature flag,refactor,False,1,none,none,none,False,always_passed
+348,Remove .openhands/skills/repo.md symlink,docs,False,4,"none,none,none,none",none,none,False,always_passed
+347,chore: Remove unused 'Display Cost Per Action' setting,refactor,False,1,none,none,none,False,always_passed
+341,Feat: delegate tool for spawning sub-agents,feature,False,36,"none,none,none,none,none,none (sampled 6/36)",none,none,False,always_passed
+340,Add AGENTS.md and link OpenHands repo guidance,docs,False,17,"none,none,none,none,none,none (sampled 6/17)",none,none,False,always_passed
+337,Rewrite README,docs,False,10,"none,none,none,none,none,none,none,none,none,none",none,none,False,always_passed
+336,Make ACP token streaming the default behavior,feature,False,3,"none,none,none",none,none,False,always_passed
+335,Truncate long terminal commands in collapsed view,bug-fix,False,5,"none,none,none,none,none",none,none,False,always_passed
+333,feat(tui): conversation history side panel,feature,False,59,"none,none,none,none,none,none (sampled 6/59)",none,none,False,always_passed
+332,feat(acp): Send LLM-generated summary to tool call title,feature,False,16,"none,none,none,none,none,none (sampled 6/16)",none,none,False,always_passed
+331,feat: Show context window and cost metrics in status bar,feature,False,8,"none,none,none,none,none,none,none,none",none,none,False,always_passed
+328,Add external editor support with CTRL+X shortcut,feature,False,15,"none,none,none,none,none,none (sampled 6/15)",none,none,False,always_passed
+326,Release 1.8.2,version-bump,False,1,none,none,none,False,always_passed
+325,Implement /new command to start a new conversation,feature,False,3,"none,none,none",none,none,False,always_passed
+323,Bump SDK packages to v1.8.1,dependency-bump,False,1,none,none,none,False,always_passed
+322,fix: Correctly format LLM model names for litellm providers,bug-fix,False,1,none,none,none,False,always_passed
+319,auth: prefer verification_uri_complete for OAuth device flow,bug-fix,False,1,none,none,none,False,always_passed
+315,feat: Add dedicated plan window for agent task tracking,feature,True,38,"none,none,none,none,none,none (sampled 6/38)",none,none,False,always_passed
+313,Print raw JSON when event validation fails,bug-fix,False,1,none,none,none,False,always_passed
+312,feat: Add drag-to-select auto-copy feature for conversation events,feature,False,1,none,none,none,False,always_passed
+311,Add notification to restart CLI after settings change,bug-fix,False,1,none,none,none,False,always_passed
+310,Add stale issues workflow,ci,False,2,"none,none",none,none,False,always_passed
+306,Release 1.8.1,version-bump,False,3,"none,none,none",none,none,False,always_passed
+303,Use LLM-generated action summary instead of string truncation heuristic + UI Clean up,feature,True,28,"none,none,none,none,none,none (sampled 6/28)",none,none,False,always_passed
+299,Move confirmation panel inline underneath action events,feature,False,2,"none,none",none,none,False,always_passed
+297,Fix confirmation panel scrolling when content is too long,bug-fix,False,3,"none,none,none",none,none,False,always_passed
+295,feat: Add toggle for default cell expand/collapse state,feature,False,23,"none,none,none,none,none,none (sampled 6/23)",none,none,False,always_passed
+293,Add /feedback command for users to send anonymous feedback about CLI,feature,False,3,"none,none,none",none,none,False,always_passed
+290,Add view command to display conversation trajectory,feature,False,2,"none,none",none,none,False,always_passed
+286,fix(tui): disable markup parsing for user messages to prevent crashes,bug-fix,False,1,none,none,none,False,always_passed
+285,Skip PR description update for forked repos,ci,False,1,none,none,none,False,always_passed
+281,Release 1.7.1,version-bump,False,1,none,none,none,False,always_passed
+280,fix: use model_id without provider prefix when loading settings,bug-fix,False,2,"none,none",none,none,False,always_passed
+279,fix: Skip PR description update if uvx section already exists,bug-fix,False,3,"none,none,none",none,none,False,always_passed
