@@ -1,0 +1,30 @@
+pr_number,pr_title,classification_v2,logs_available,num_failing_commits_with_logs,unique_failing_tests,num_resolved_baseline,num_resolved_code_fix,refined_classification
+719,Bump SDK packages to v1.20.1,resolved_baseline,True,7,3,0,3,all_code_fixed
+715,feat: Add workspace-specific prompt history with fuzzy search modal,resolved_baseline,True,2,26,0,26,all_code_fixed
+703,docs(acp): add docstring to _ACPContext Protocol,resolved_code_fix,True,1,1,0,1,all_code_fixed
+699,tests: isolate persistence directories to prevent writes to user home,merged_with_failure,True,1,1,0,1,all_code_fixed
+698,fix(tui): preserve typed character when auto-focusing input,merged_with_failure,True,1,1,0,1,all_code_fixed
+662,Bump SDK packages to v1.17.0,resolved_code_fix,True,1,29,0,29,all_code_fixed
+648,feat: Register built-in subagents before conversation start,resolved_code_fix,True,1,15,0,15,all_code_fixed
+636,feat: ensure backward compatibility for persisted conversations with DelegateTool,resolved_code_fix,True,1,0,0,0,no_tests_parsed
+595,fix(tui): consolidate duplicate get_conversation_summary logic,merged_with_failure,True,1,1,0,1,all_code_fixed
+523,ci: disable pull_request_target for PR review,resolved_code_fix,False,0,0,0,0,logs_expired (resolved_code_fix)
+521,ci: disable uv cache in untrusted agent workflows,resolved_code_fix,False,0,0,0,0,logs_expired (resolved_code_fix)
+515,Bump version to 1.12.2,resolved_baseline,False,0,0,0,0,logs_expired (resolved_baseline)
+511,feat(tui): bind ctrl+a to select all text in input area,resolved_baseline,False,0,0,0,0,logs_expired (resolved_baseline)
+504,fix: default collapsibles to collapsed state,resolved_baseline,False,0,0,0,0,logs_expired (resolved_baseline)
+497,tui: only show agent name prefix for non-default agents,resolved_baseline,False,0,0,0,0,logs_expired (resolved_baseline)
+496,Bump version to 1.12.1,resolved_baseline,False,0,0,0,0,logs_expired (resolved_baseline)
+495,Bump SDK packages to v1.11.4,resolved_baseline,False,0,0,0,0,logs_expired (resolved_baseline)
+490,tui: remove grey vertical border from Collapsible widgets,resolved_baseline,False,0,0,0,0,logs_expired (resolved_baseline)
+487,feat: add OpenHands stop hooks for pre-commit validation,resolved_code_fix,False,0,0,0,0,logs_expired (resolved_code_fix)
+480,Bump version to 1.12.0,resolved_baseline,False,0,0,0,0,logs_expired (resolved_baseline)
+474,"feat: Show loaded resources (skills, hooks, MCPs) and add /skills command",resolved_baseline,False,0,0,0,0,logs_expired (resolved_baseline)
+471,docs: minor documentation tweaks,resolved_code_fix,False,0,0,0,0,logs_expired (resolved_code_fix)
+464,ci: add daily good first issue labeler workflow,resolved_code_fix,False,0,0,0,0,logs_expired (resolved_code_fix)
+454,add close button and Escape to dismiss history panel,resolved_baseline,False,0,0,0,0,logs_expired (resolved_baseline)
+445,"Add timeout, max_tokens and max_size to the LLM settings configuration card",resolved_code_fix,False,0,0,0,0,logs_expired (resolved_code_fix)
+433,Add e2e snapshot tests for initial setup flow,resolved_baseline,False,0,0,0,0,logs_expired (resolved_baseline)
+432,Add e2e snapshot test for creating agent plan trajectory + fix test flakiness,resolved_baseline,False,0,0,0,0,logs_expired (resolved_baseline)
+422,update critic feature description,resolved_baseline,False,0,0,0,0,logs_expired (resolved_baseline)
+421,refactor: add reactive state management + decouple main app from conversation management,resolved_baseline,False,0,0,0,0,logs_expired (resolved_baseline)
