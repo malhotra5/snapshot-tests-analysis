@@ -109,8 +109,9 @@ def generate(rows, out):
     if adopt_idx is not None:
         ax.axvline(adopt_idx - 0.5, color="#EB5757", linestyle="--",
                    alpha=0.7, linewidth=1.5)
-        ax.text(adopt_idx - 0.4, max(totals) * 0.95, "snapshot\nadoption",
-                fontsize=9, color="#EB5757", va="top")
+        ax.text(adopt_idx - 0.5, max(totals) * 1.13, "snapshot\nadoption",
+                fontsize=9, color="#EB5757", va="bottom", ha="center",
+                fontweight="bold")
 
     # Agent % line on secondary axis
     ax2 = ax.twinx()
