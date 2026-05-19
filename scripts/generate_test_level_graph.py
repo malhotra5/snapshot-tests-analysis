@@ -3,9 +3,10 @@
 for PRs where CI logs were available.
 
 Story: PR-level classification sees a PR with snapshot file changes and
-calls it "baseline updated." But the failing tests and the updated
-baselines can be for different tests. When we cross-reference at the test
-level, regressions caught jumps from 44% to 100% in our sample.
+calls it "baseline updated." But a single PR can update baselines for
+some tests (intentional changes) while fixing code for others (regressions
+caught). The PR-level view collapses both into one label. At the test
+level, every failing test in our sample was resolved by a code fix.
 """
 
 import csv
@@ -49,13 +50,15 @@ def main():
         v2 = r["classification_v2"]
         n_cf = int(r["num_resolved_code_fix"])
         n_bl = int(r["num_resolved_baseline"])
-        was_wrong = (v2 == "resolved_baseline" and n_cf > 0 and n_bl == 0)
+        # These PRs also updated baselines for OTHER tests — the PR-level
+        # view only saw the baseline updates and missed the code fixes
+        is_both = (v2 == "resolved_baseline" and n_cf > 0)
 
-        tag = " ← was 'baseline updated'" if was_wrong else ""
+        tag = " (+ baselines for other tests)" if is_both else ""
         labels.append(f"#{pr}{tag}")
         code_fix_counts.append(n_cf)
         baseline_counts.append(n_bl)
-        reclassified.append(was_wrong)
+        reclassified.append(is_both)
 
     y = np.arange(len(labels))
     bar_height = 0.55
@@ -73,10 +76,10 @@ def main():
         ax.text(total + 0.4, i, str(total),
                 va="center", fontsize=11, fontweight="bold")
 
-    # Highlight reclassified rows
-    for i, is_recl in enumerate(reclassified):
-        if is_recl:
-            ax.get_yticklabels()[i].set_color("#c0392b")
+    # Highlight PRs that were both regression-catch and baseline-update
+    for i, is_both in enumerate(reclassified):
+        if is_both:
+            ax.get_yticklabels()[i].set_color("#8e44ad")
             ax.get_yticklabels()[i].set_fontweight("bold")
 
     ax.set_yticks(y)
