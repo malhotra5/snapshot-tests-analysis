@@ -244,7 +244,7 @@ def fig_commit_level_pattern(rows, full, out):
 
 
 # ---------------------------------------------------------------------------
-# Graph 4: Forcing function — % of TUI PRs with snapshot updates over time
+# Graph 4: Forcing function — % of UI PRs with snapshot updates over time
 # ---------------------------------------------------------------------------
 
 def fig_forcing_function(rows, full, out):
@@ -277,9 +277,9 @@ def fig_forcing_function(rows, full, out):
     bv = [v for v in bug_pcts if v is not None]
 
     ax.plot(fx, fv, color=C["feature"], marker="o", linewidth=2.5, markersize=8,
-            label="TUI features with snapshots")
+            label="UI features with snapshots")
     ax.plot(bx, bv, color=C["bug-fix"], marker="s", linewidth=2.5, markersize=8,
-            label="TUI bug-fixes with snapshots")
+            label="UI bug-fixes with snapshots")
 
     # Adoption line
     adopt_idx = months.index("2026-01") if "2026-01" in months else None
@@ -289,7 +289,7 @@ def fig_forcing_function(rows, full, out):
 
     ax.set_xticks(x)
     ax.set_xticklabels(months, rotation=30, ha="right")
-    ax.set_ylabel("% of TUI PRs including snapshot updates")
+    ax.set_ylabel("% of UI PRs including snapshot updates")
     ax.set_ylim(-5, 105)
     ax.set_title("Snapshot as Forcing Function")
     ax.legend()
@@ -378,7 +378,7 @@ def fig_review_speed(rows, full, out):
         ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.05,
                 f"{v:.1f}h", ha="center", va="bottom", fontsize=12, fontweight="bold")
     ax.set_ylabel("Median hours")
-    ax.set_title("Time to First Review\n(TUI PRs, post-adoption)")
+    ax.set_title("Time to First Review\n(UI PRs, post-adoption)")
 
     # Lines changed (to show PRs with snapshots are larger)
     ax = axes[1]
@@ -394,7 +394,7 @@ def fig_review_speed(rows, full, out):
         ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 10,
                 f"{v:.0f}", ha="center", va="bottom", fontsize=12, fontweight="bold")
     ax.set_ylabel("Median lines changed")
-    ax.set_title("PR Size\n(TUI PRs, post-adoption)")
+    ax.set_title("PR Size\n(UI PRs, post-adoption)")
 
     fig.suptitle("Time to First Review vs PR Size", fontsize=14,
                  fontweight="bold", y=1.02)
@@ -427,7 +427,7 @@ def fig_large_pr_snapshots(rows, full, out):
 
     ax.set_xlabel("Lines changed (additions + deletions)")
     ax.set_ylabel("Number of commits")
-    ax.set_title("TUI PRs: Size vs Iteration\n"
+    ax.set_title("UI PRs: Size vs Iteration\n"
                  "Green = includes snapshot changes")
     ax.set_xscale("symlog", linthresh=100)
     ax.legend(handles=[
@@ -527,7 +527,7 @@ def fig_sdlc_summary(rows, full, out):
     # Evidence scores: 0=no evidence, 1=weak, 2=moderate, 3=strong
     scores = [3, 2, 2, 1, 0]
     evidence = [
-        "46% of TUI features\ninclude snapshot updates",
+        "46% of UI features\ninclude snapshot updates",
         "First review 2× faster\n(0.9h vs 1.7h)",
         f"{code_then_snap}/{total_multi} multi-commit PRs\nupdate snapshots later",
         "9 version bumps\nupdate 25 baselines each",
@@ -563,7 +563,7 @@ def fig_sdlc_summary(rows, full, out):
 # ---------------------------------------------------------------------------
 
 def fig_bug_rate_with_context(rows, full, out):
-    """UX bugs normalized by cumulative TUI features — the honest trend."""
+    """UX bugs normalized by cumulative UI features — the honest trend."""
     months = sorted(set(r.get("pr_created_at", "")[:7] for r in rows
                         if r.get("pr_created_at", "")[:7]))
 
@@ -611,7 +611,7 @@ def fig_bug_rate_with_context(rows, full, out):
 
     ax.set_xticks(x)
     ax.set_xticklabels(months, rotation=30, ha="right")
-    ax.set_ylabel("UX-regression bugs / cumulative TUI features", fontsize=10)
+    ax.set_ylabel("UX-regression bugs / cumulative UI features", fontsize=10)
     ax.set_title("UX Regression Rate Normalized by Codebase Size")
     ax.legend(fontsize=10)
     ax.set_ylim(-0.02, max(ux_per_feat) * 1.25)
@@ -664,15 +664,15 @@ def fig_ux_regression_breakdown(rows, full, out):
     w = 0.65
 
     b1 = ax.bar(x, snap_mod, width=w, color="#27AE60",
-                label="TUI + existing snapshots updated", edgecolor="white")
+                label="UI + existing snapshots updated", edgecolor="white")
     b2 = ax.bar(x, snap_new, width=w, bottom=snap_mod, color="#56CCF2",
-                label="TUI + new snapshots added", edgecolor="white")
+                label="UI + new snapshots added", edgecolor="white")
     bottom2 = [a + b for a, b in zip(snap_mod, snap_new)]
     b3 = ax.bar(x, tui_no_snap, width=w, bottom=bottom2, color="#F2994A",
-                label="TUI bug, no snapshots touched", edgecolor="white")
+                label="UI bug, no snapshots touched", edgecolor="white")
     bottom3 = [a + b for a, b in zip(bottom2, tui_no_snap)]
     b4 = ax.bar(x, non_tui, width=w, bottom=bottom3, color="#BDBDBD",
-                label="Non-TUI bug", edgecolor="white")
+                label="Non-UI bug", edgecolor="white")
 
     totals = [a + b + c + d for a, b, c, d in zip(snap_mod, snap_new, tui_no_snap, non_tui)]
     for i, t in enumerate(totals):
@@ -869,7 +869,7 @@ def fig_severity_by_domain(rows, full, out):
     x = range(len(sevs))
     w = 0.35
     ax.bar([i - w/2 for i in x], vis_counts, width=w, color=C["feature"],
-           label="Visual (TUI)", edgecolor="white")
+           label="Visual (UI)", edgecolor="white")
     ax.bar([i + w/2 for i in x], nonvis_counts, width=w, color="#BDBDBD",
            label="Non-visual", edgecolor="white")
 
@@ -1053,8 +1053,8 @@ def fig_covered_vs_uncovered(rows, full, out):
 
     ax.set_xticks(x)
     ax.set_xticklabels(months, rotation=30, ha="right")
-    ax.set_ylabel("TUI bug-fix PRs")
-    ax.set_title("Path-Level Coverage of TUI Bugs")
+    ax.set_ylabel("UI bug-fix PRs")
+    ax.set_title("Path-Level Coverage of UI Bugs")
     ax.legend(fontsize=9, loc="upper right")
     fig.tight_layout()
     fig.savefig(out / "deep_15_covered_vs_uncovered.png", dpi=150)
