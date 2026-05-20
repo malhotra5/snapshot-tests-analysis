@@ -118,7 +118,7 @@ def main():
     ax_split.set_xlabel("Number of PRs")
     ax_split.invert_yaxis()
     ax_split.set_title(
-        f"How {total} Snapshot Failures Were Resolved",
+        f"How {total} PRs With Snapshot Failures Resolved",
         fontsize=13, fontweight="bold",
     )
     ax_split.spines["top"].set_visible(False)
