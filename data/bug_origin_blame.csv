@@ -1,0 +1,74 @@
+pr_number,fix_author,bug_severity,origin_pr,origin_author,blame_confidence,blamed_prs_audit,blamed_lines,pr_title
+738,agent,ux-regression,658,human,high,#658(16/18); #697(2/18),18,[codex] Preserve explicit LLM max token overrides
+732,human,critical,421,agent,high,#421(1/1),1,fix(tui): disable markup in conversation notifications
+731,agent,ux-regression,717,human,high,#717(1/1),1,fix: preserve unicode in JSON output
+717,human,ux-regression,249,agent,high,#249(16/16),16,fix: emit valid JSONL from --json mode
+714,agent,ux-regression,322,human,high,#322(2/2),2,tui: list 'openhands' provider first in settings dropdown
+711,human,critical,192,agent,high,#192(10/12); #230(2/12),12,fix: migrate login to V1 settings/users endpoints
+698,human,ux-regression,,,no_blame_data,,0,fix(tui): preserve typed character when auto-focusing input
+697,human,ux-regression,658,human,high,#658(6/7); #141(1/7),7,settings: clear stale max tokens on model identity change
+695,human,critical,621,agent,high,#621(2/3); #315(1/3),3,fix(tui): resolve 'no running event loop' in RichLogVisualizer (fixes #696)
+687,human,ux-regression,357,human,medium,#357(1/4); #231(1/4); #581(1/4),4,fix(settings): preserve native modal Tab navigation in Settings
+686,human,ux-regression,421,agent,medium,#421(3/7); #141(2/7); #178(1/7),7,tui: Add ESC/Ctrl+C/Ctrl-Q key bindings to modals
+658,human,ux-regression,445,human,high,#445(3/3),3,fix(settings): reset max_input_tokens on model change
+581,human,ux-regression,,,no_blame_data,,0,tui: add tab navigation hint to footers (#512)
+570,agent,ux-regression,278,agent,high,#278(2/4); #247(1/4); #350(1/4),4,fix(web): derive URLs from request headers for reverse-proxy support
+546,agent,ux-regression,141,agent,high,#141(2/3); #303(1/3),3,tui: implement conditional autoscrolling
+543,agent,critical,277,agent,high,#277(1/2); #176(1/2),2,fix(acp): send session/update after session/new response
+514,agent,critical,178,agent,high,#178(5/9); #141(4/9),9,fix: Clear values of settings modal using .clear() instead of setting as blank
+510,agent,ux-regression,231,agent,high,#231(3/4); #141(1/4),4,Settings: enable memory condensation by default in basic and advanced modes
+504,agent,ux-regression,347,agent,high,#347(5/7); #295(2/7),7,fix: default collapsibles to collapsed state
+497,agent,ux-regression,341,agent,high,#341(6/9); #421(1/9); #400(1/9),9,tui: only show agent name prefix for non-default agents
+473,agent,critical,333,human,medium,#333(671/1995); #141(579/1995); #331(253/1995),1995,fix: restore switch handling after state refactor
+454,human,ux-regression,333,human,high,#333(3/4); #422(1/4),4,add close button and Escape to dismiss history panel
+448,human,critical,360,agent,high,#360(8/9); #50(1/9),9,fix: critic - no module named posthog
+439,agent,ux-regression,333,human,high,#333(1/1),1,fix(tui): reset token metrics when creating new conversation
+438,agent,ux-regression,141,agent,high,#141(6/6),6,tui: hide slash commands from vertical scroll
+435,agent,ux-regression,,,no_blame_data,,0,Add E2E snapshot tests for history panel and conversation switching
+428,agent,critical,,,no_blame_data,,0,feat: Load hooks from ~/.openhands/hooks.json in CLI
+402,agent,critical,,,no_blame_data,,0,fix: pin rich<14.3.0 to fix autocomplete shutdown crash
+400,agent,ux-regression,341,agent,high,#341(18/24); #303(6/24),24,fix: display agent MessageEvents in TUI when critic is enabled
+391,agent,ux-regression,360,agent,high,#360(2/2),2,Fix critic feedback text to include 'success' prediction
+390,agent,ux-regression,333,human,medium,#333(671/1995); #141(579/1995); #331(253/1995),1995,Preserve condenser settings from agent_settings.json
+388,agent,critical,379,agent,medium,#379(101/364); #366(57/364); #361(49/364),364,(Hotfix): fix headless mode to work with env overrides + disable critic in headless mode
+379,agent,ux-regression,366,agent,high,#366(20/23); #265(2/23); #248(1/23),23,fix: require --override-with-envs flag to apply LLM env vars
+375,agent,ux-regression,315,agent,high,#315(1/2); #231(1/2),2,Fix capitalization in command palette for Plan and Settings
+372,human,ux-regression,178,agent,high,#178(6/7); #141(1/7),7,fix: Issue with memory condensation not being editable
+363,agent,critical,141,agent,high,#141(2/3); #315(1/3),3,(Hotfix): CLI crashes when opening MCP panel
+361,agent,ux-regression,192,agent,high,#192(6/6),6,Fix cloud login to respect llm_base_url from settings
+351,agent,ux-regression,254,agent,high,#254(2/2),2,Ignore whitespace-only reasoning_content in streaming
+335,agent,ux-regression,141,agent,high,#141(17/28); #303(10/28); #278(1/28),28,Truncate long terminal commands in collapsed view
+322,human,critical,141,agent,high,#141(7/11); #178(4/11),11,fix: Correctly format LLM model names for litellm providers
+319,agent,ux-regression,192,agent,high,#192(3/3),3,auth: prefer verification_uri_complete for OAuth device flow
+313,agent,ux-regression,,,no_blame_data,,0,Print raw JSON when event validation fails
+311,agent,ux-regression,231,agent,high,#231(1/1),1,Add notification to restart CLI after settings change
+297,agent,ux-regression,141,agent,high,#141(7/7),7,Fix confirmation panel scrolling when content is too long
+286,human,critical,141,agent,high,#141(2/2),2,fix(tui): disable markup parsing for user messages to prevent crashes
+280,agent,critical,178,agent,high,#178(4/4),4,fix: use model_id without provider prefix when loading settings
+276,agent,ux-regression,141,agent,high,#141(652/951); #328(214/951); #177(75/951),951,fix(input): implement auto-growing input with soft wrapping
+273,agent,ux-regression,141,agent,high,#141(16/16),16,fix: clipboard copy when copy button is pressed
+265,agent,critical,193,agent,high,#193(13/24); #176(7/24); #69(2/24),24,Add --resume and --last flags support to openhands acp command
+263,agent,ux-regression,50,human,high,#50(4/6); #56(2/6),6,Always create fresh condenser with current defaults on load
+250,agent,critical,192,agent,high,#192(5/5),5,Fix none type error in cloud connection 
+216,agent,ux-regression,,,no_blame_data,,0,Add ConversationErrorEvent handling to conversation visualizer
+205,human,critical,,,no_blame_data,,0,fix(cli): add terminal compatibility detection
+201,agent,critical,185,agent,high,#185(41/64); #176(21/64); #113(1/64),64,Fix MCP stdio server argument parsing with -- separator
+198,agent,ux-regression,184,agent,high,#184(32/32),32,Fix false positive on e2e test + binary executable packaging 
+188,agent,critical,50,human,high,#50(1/1),1,Fix error display crash when error message contains XML special characters
+178,agent,ux-regression,141,agent,high,#141(182/182),182,Fix API key preservation in settings screen
+177,agent,ux-regression,141,agent,high,#141(4/4),4,Fix multi-line paste issue in single-line input mode
+173,agent,ux-regression,50,human,high,#50(1/2); #51(1/2),2,Fix URL display by adding newlines to prevent truncation
+170,agent,critical,110,human,medium,#110(10/22); #50(6/22); #131(6/22),22,Fix MarkupError with Chinese characters and special symbols
+168,agent,critical,,,no_blame_data,,0,fix: hardcode base_url for OpenHands provider in CLI
+166,human,ux-regression,110,human,medium,#110(10/22); #50(6/22); #131(6/22),22,"Revert ""feat: Comprehensive Terminal UI Improvements"""
+164,agent,critical,69,human,high,#69(225/225),225,Fix ACP session/new returning null session ID
+162,agent,critical,,,no_blame_data,,0,Load .env at CLI startup to avoid python-dotenv stack-walk failures
+153,agent,ux-regression,69,human,high,#69(6/7); #50(1/7),7,Fix malformed mcp.json error handling in ACP
+139,human,ux-regression,109,agent,high,#109(3/3),3,Display version number in grey color for consistency
+133,agent,critical,,,no_blame_data,,0,Restrict Python version to <3.14 to avoid tiktoken build issues
+74,human,ux-regression,50,human,high,#50(1/2); #37(1/2),2,Fix model list display to show up to 10 models per provider
+65,human,ux-regression,50,human,high,#50(5/6); #51(1/6),6,Fix: Set prompt_continuation to empty string for cleaner multiline input
+64,agent,ux-regression,50,human,high,#50(330/334); #51(4/334),334,Update CLI visualizer to use horizontal rules instead of panels
+57,agent,ux-regression,56,agent,high,#56(8/8),8,Fix: Check for openhands/ prefix instead of litellm_proxy in model name
+56,agent,critical,50,human,high,#50(32/32),32,Only set litellm_extra_body for litellm_proxy models
+38,human,ux-regression,34,agent,high,#34(20/23); #36(3/23),23,Fix pause resume pause in confirmation mode
