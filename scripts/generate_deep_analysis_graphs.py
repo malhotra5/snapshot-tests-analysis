@@ -44,6 +44,9 @@ C = {
     "bug-fix": "#EB5757",
     "refactor": "#9B59B6",
     "test": "#F2C94C",
+    "ci": "#56CCF2",
+    "docs": "#56CCF2",
+    "dependency-bump": "#F2994A",
     "version-bump": "#BDBDBD",
     "other": "#828282",
     "code_then_snap": "#EB5757",
@@ -944,44 +947,60 @@ def fig_bugfix_coverage_gap(rows, full, out):
 
 
 # ---------------------------------------------------------------------------
-# Graph 14: Snapshot guarding existing behavior — commit evidence
+# Graph 14: Snapshot guarding existing behavior — CI evidence
 # ---------------------------------------------------------------------------
 
 def fig_snapshot_guarding(rows, full, out):
-    """Bar chart: snapshot-fix commits by PR type (feature, refactor, etc.)."""
-    snap_prs = [r for r in rows
-                if r["h_has_snapshot_changes"] == "true"
-                and r["llm_pr_type"] not in ("version-bump", "dependency-bump")
-                and int(r.get("pr_commit_count", 0)) >= 2]
+    """Bar chart: CI failure events in PRs that eventually passed, by PR type.
 
-    events_by_type = Counter()
+    Uses actual CI status check data (snapshot_ci_results_v2.csv) rather than
+    commit message keyword heuristics. A "failure event" is a commit where the
+    "Run snapshot tests" check-run reported failure, in a PR that eventually
+    passed — evidence the developer iterated to resolve the failure.
+    """
+    ci_path = Path("data/snapshot_ci_results_v2.csv")
+    if not ci_path.exists():
+        print("  (skipped — snapshot_ci_results_v2.csv not found)")
+        return
+
+    with open(ci_path) as f:
+        ci_rows = list(csv.DictReader(f))
+
+    # PRs that failed at some point but last commit passed (developer iterated)
+    iterated = [r for r in ci_rows
+                if "failure" in r["snapshot_ci_sequence"]
+                and r["last_commit_ci"] == "success"]
+
+    failure_events_by_type = Counter()
     prs_by_type = defaultdict(set)
 
-    for r in snap_prs:
-        pr = full.get(int(r["pr_number"]), {})
-        commits = pr.get("pr_commits", [])
-        for i, c in enumerate(commits):
-            msg = (c.get("message") or "").lower()
-            if i > 0 and any(kw in msg for kw in SNAP_KEYWORDS):
-                events_by_type[r["llm_pr_type"]] += 1
-                prs_by_type[r["llm_pr_type"]].add(r["pr_number"])
+    for r in iterated:
+        pr_type = r["pr_type"]
+        seq = r["snapshot_ci_sequence"].split("(")[0].strip()
+        statuses = [s.strip() for s in seq.split(",")]
+        failures = sum(1 for s in statuses if s == "failure")
+        failure_events_by_type[pr_type] += failures
+        prs_by_type[pr_type].add(r["pr_number"])
 
-    types = ["feature", "bug-fix", "refactor", "test"]
-    event_vals = [events_by_type.get(t, 0) for t in types]
+    types = ["feature", "bug-fix", "refactor", "test",
+             "ci", "docs", "dependency-bump", "version-bump"]
+    # Filter to types that actually have data
+    types = [t for t in types if failure_events_by_type.get(t, 0) > 0]
+    event_vals = [failure_events_by_type.get(t, 0) for t in types]
     pr_vals = [len(prs_by_type.get(t, set())) for t in types]
     type_colors = [C.get(t, "#888") for t in types]
 
-    fig, ax = plt.subplots(figsize=(9, 5))
+    fig, ax = plt.subplots(figsize=(10, 5))
     x = range(len(types))
     bars = ax.bar(x, event_vals, color=type_colors, edgecolor="white", width=0.6)
     for bar, ev, pr_c in zip(bars, event_vals, pr_vals):
         ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.5,
-                f"{ev} commits\n({pr_c} PRs)", ha="center", va="bottom", fontsize=10)
+                f"{ev} failures\n({pr_c} PRs)", ha="center", va="bottom", fontsize=9)
 
     ax.set_xticks(x)
-    ax.set_xticklabels([t.replace("-", "\n").title() for t in types], fontsize=11)
-    ax.set_ylabel("Snapshot-fix commits (later in PR)")
-    ax.set_title('"Code First, Fix Snapshots Later"')
+    ax.set_xticklabels([t.replace("-", "\n").title() for t in types], fontsize=10)
+    ax.set_ylabel("CI snapshot failures (in PRs that eventually passed)")
+    ax.set_title("Snapshot CI Failures Resolved During Development")
     ax.set_ylim(0, max(event_vals) * 1.35)
     fig.tight_layout()
     fig.savefig(out / "deep_14_snapshot_guarding.png", dpi=150)
