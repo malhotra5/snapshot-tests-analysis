@@ -2,11 +2,18 @@
 """Generate a graph showing how snapshot CI failures were resolved,
 broken down by PR type.
 
-Uses both PR-level (v2) and test-level data where CI logs were
-available. Falls back to PR-level classification for older PRs.
+Uses test-level CI logs where available (9 PRs), falls back to
+file-level heuristics for the remaining 20 PRs with expired logs.
+
+Four resolution categories:
+  - baseline_only: only snapshot baselines updated, no code changes
+  - code_fix_only: only code changed, no snapshot file updates
+  - both: baseline updated AND code changed in the same PR
+  - merged: CI still failing when PR merged
 """
 
 import csv
+import json
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
@@ -17,9 +24,11 @@ OUT_DIR = Path("graphs")
 
 C_BASELINE = "#2ecc71"   # green
 C_CODE_FIX = "#3498db"   # blue
+C_BOTH = "#9B59B6"       # purple
 C_MERGED = "#e74c3c"     # red
 
-# Group small types for readability
+CODE_EXTS = (".py", ".tcss", ".ts", ".js", ".css")
+
 TYPE_GROUPS = {
     "feature": "Feature",
     "bug-fix": "Bug fix",
@@ -32,22 +41,46 @@ TYPE_GROUPS = {
 }
 
 
-def classify_pr(ci_row, test_level_row):
-    """Return 'baseline', 'code_fix', or 'merged' for a failed PR."""
+def classify_pr(ci_row, test_level_row, pr_files):
+    """Return 'baseline', 'code_fix', 'both', or 'merged' for a failed PR.
+
+    Uses test-level logs when available, otherwise falls back to
+    file-level heuristic (does the PR's final diff contain both
+    snapshot files and code files?).
+    """
     v2 = ci_row["classification"]
     if v2 == "merged_with_failure":
         return "merged"
 
     tl = test_level_row or {}
     has_logs = tl.get("logs_available") == "True"
+    n_bl = int(tl.get("num_resolved_baseline", 0))
     n_cf = int(tl.get("num_resolved_code_fix", 0))
 
-    if has_logs and n_cf > 0:
-        return "code_fix"
-    elif v2 == "resolved_code_fix":
-        return "code_fix"
-    else:
+    if has_logs and (n_bl + n_cf) > 0:
+        if n_bl > 0 and n_cf > 0:
+            return "both"
+        elif n_cf > 0:
+            return "code_fix"
+        else:
+            return "baseline"
+
+    # Fallback: file-level heuristic from PR diff
+    snap_files = [f for f in pr_files
+                  if "__snapshots__" in f.get("filename", "")
+                  and f["filename"].endswith(".svg")]
+    has_snap = len(snap_files) > 0
+    has_code = any(f["filename"].endswith(CODE_EXTS) for f in pr_files
+                   if "__snapshots__" not in f.get("filename", ""))
+
+    if has_snap and has_code:
+        return "both"
+    elif has_snap:
         return "baseline"
+    elif has_code:
+        return "code_fix"
+    # Edge case: only non-code, non-snapshot files (e.g. CI yaml)
+    return "code_fix" if v2 == "resolved_code_fix" else "baseline"
 
 
 def main():
@@ -57,61 +90,77 @@ def main():
         pr_data = {r["pr_number"]: r for r in csv.DictReader(f)}
     with open(DATA_DIR / "test_level_summary.csv") as f:
         test_level = {r["pr_number"]: r for r in csv.DictReader(f)}
+    with open(DATA_DIR / "mined_prs.json") as f:
+        mined = json.load(f)
+    pr_files_map = {str(p["pr_number"]): p.get("pr_files", [])
+                    for p in mined["pull_requests"]}
 
     has_ci = [r for r in ci_rows
               if "failure" in r["snapshot_ci_sequence"]
               or "success" in r["snapshot_ci_sequence"]]
     failed = [r for r in has_ci if r["ever_failed"] == "True"]
 
-    # Classify each failed PR and group by type
     type_baseline = defaultdict(int)
     type_code_fix = defaultdict(int)
+    type_both = defaultdict(int)
     type_merged = defaultdict(int)
 
     for r in failed:
         pr_num = r["pr_number"]
         raw_type = pr_data.get(pr_num, {}).get("llm_pr_type", "other")
         group = TYPE_GROUPS.get(raw_type, "Other")
-        cls = classify_pr(r, test_level.get(pr_num))
+        cls = classify_pr(r, test_level.get(pr_num), pr_files_map.get(pr_num, []))
 
         if cls == "baseline":
             type_baseline[group] += 1
         elif cls == "code_fix":
             type_code_fix[group] += 1
+        elif cls == "both":
+            type_both[group] += 1
         else:
             type_merged[group] += 1
 
-    # Order types by total count descending
     all_types = sorted(
-        set(list(type_baseline) + list(type_code_fix) + list(type_merged)),
-        key=lambda t: type_baseline[t] + type_code_fix[t] + type_merged[t],
+        set(list(type_baseline) + list(type_code_fix)
+            + list(type_both) + list(type_merged)),
+        key=lambda t: (type_baseline[t] + type_code_fix[t]
+                       + type_both[t] + type_merged[t]),
         reverse=True,
     )
 
-    baseline_vals = [type_baseline[t] for t in all_types]
-    code_fix_vals = [type_code_fix[t] for t in all_types]
-    merged_vals = [type_merged[t] for t in all_types]
+    bl_vals = [type_baseline[t] for t in all_types]
+    cf_vals = [type_code_fix[t] for t in all_types]
+    bo_vals = [type_both[t] for t in all_types]
+    mg_vals = [type_merged[t] for t in all_types]
 
     # --- Graph ---
     fig, ax = plt.subplots(figsize=(11, 5))
     y = np.arange(len(all_types))
     bar_h = 0.6
 
-    bars_bl = ax.barh(y, baseline_vals, bar_h,
-                      label="Updated baseline (intentional change)",
-                      color=C_BASELINE, edgecolor="white", linewidth=1.5)
-    bars_cf = ax.barh(y, code_fix_vals, bar_h, left=baseline_vals,
-                      label="Fixed code (regression caught)",
-                      color=C_CODE_FIX, edgecolor="white", linewidth=1.5)
-    bars_mg = ax.barh(y, merged_vals, bar_h,
-                      left=[b + c for b, c in zip(baseline_vals, code_fix_vals)],
-                      label="Merged with failure (CI advisory)",
-                      color=C_MERGED, edgecolor="white", linewidth=1.5)
+    left = [0] * len(all_types)
+    ax.barh(y, bl_vals, bar_h, left=left,
+            label="Baseline only (intentional change)",
+            color=C_BASELINE, edgecolor="white", linewidth=1.5)
+    left = [a + b for a, b in zip(left, bl_vals)]
 
-    # Annotate totals
-    for i, t in enumerate(all_types):
-        total = baseline_vals[i] + code_fix_vals[i] + merged_vals[i]
-        ax.text(total + 0.2, i, str(total),
+    ax.barh(y, bo_vals, bar_h, left=left,
+            label="Both (baseline + code change)",
+            color=C_BOTH, edgecolor="white", linewidth=1.5)
+    left = [a + b for a, b in zip(left, bo_vals)]
+
+    ax.barh(y, cf_vals, bar_h, left=left,
+            label="Code fix only (regression caught)",
+            color=C_CODE_FIX, edgecolor="white", linewidth=1.5)
+    left = [a + b for a, b in zip(left, cf_vals)]
+
+    ax.barh(y, mg_vals, bar_h, left=left,
+            label="Merged with failure (CI advisory)",
+            color=C_MERGED, edgecolor="white", linewidth=1.5)
+    left = [a + b for a, b in zip(left, mg_vals)]
+
+    for i in range(len(all_types)):
+        ax.text(left[i] + 0.2, i, str(left[i]),
                 va="center", fontsize=12, fontweight="bold")
 
     ax.set_yticks(y)
@@ -125,8 +174,7 @@ def main():
     ax.legend(loc="lower right", fontsize=9)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.set_xlim(0, max(b + c + m for b, c, m
-                       in zip(baseline_vals, code_fix_vals, merged_vals)) * 1.25)
+    ax.set_xlim(0, max(left) * 1.25)
 
     fig.tight_layout()
     out_path = OUT_DIR / "deep_19_ci_outcomes.png"
@@ -134,19 +182,20 @@ def main():
     plt.close(fig)
     print(f"Saved: {out_path}")
 
-    # Print summary
-    total_bl = sum(baseline_vals)
-    total_cf = sum(code_fix_vals)
-    total_mg = sum(merged_vals)
-    total = total_bl + total_cf + total_mg
+    total_bl = sum(bl_vals)
+    total_cf = sum(cf_vals)
+    total_bo = sum(bo_vals)
+    total_mg = sum(mg_vals)
+    total = total_bl + total_cf + total_bo + total_mg
     print(f"\n{total} PRs with snapshot failures:")
-    print(f"  {total_bl} ({100*total_bl/total:.0f}%) updated baseline")
-    print(f"  {total_cf} ({100*total_cf/total:.0f}%) fixed code")
+    print(f"  {total_bl} ({100*total_bl/total:.0f}%) baseline only")
+    print(f"  {total_bo} ({100*total_bo/total:.0f}%) both (baseline + code)")
+    print(f"  {total_cf} ({100*total_cf/total:.0f}%) code fix only")
     print(f"  {total_mg} ({100*total_mg/total:.0f}%) merged with failure")
     print(f"\nBy type:")
     for t in all_types:
-        bl, cf, mg = type_baseline[t], type_code_fix[t], type_merged[t]
-        print(f"  {t:<14} baseline={bl} code_fix={cf} merged={mg}")
+        bl, bo, cf, mg = type_baseline[t], type_both[t], type_code_fix[t], type_merged[t]
+        print(f"  {t:<14} baseline={bl} both={bo} code_fix={cf} merged={mg}")
 
 
 if __name__ == "__main__":
